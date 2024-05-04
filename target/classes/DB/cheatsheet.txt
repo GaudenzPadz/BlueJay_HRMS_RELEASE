@@ -1,0 +1,33 @@
+cheatsheet for SQLITE:
+
+//to view sql code/schema
+sqlite3 DBStudent.sqlite .schema > schema.sql
+
+
+You can open the SQLite CLI by navigating to the directory containing your SQLite database file in your command prompt or terminal, and then typing sqlite3 followed by the name of your database file. For example:
+
+sqlite3 bluejayDB.db
+
+Execute SQL Commands:
+
+Once you're in the SQLite CLI, you can execute SQL commands directly. You can copy and paste your SQL statements one by one into the CLI prompt and press Enter to execute them.
+
+--> CREATE TABLE sqlite_sequence(name,seq);
+
+//line by line execution
+--> CREATE TABLE IF NOT EXISTS "student" (
+-->    "id" INTEGER,
+-->    "name" VARCHAR,
+-->    "age" INTEGER,
+-->    "email" VARCHAR,
+-->    PRIMARY KEY("id")
+-->) ;
+
+
+//to exit
+.exit 
+
+
+//if tired 
+just use DB Browser for SQLITE 
+pindot pindot ka lang dun 

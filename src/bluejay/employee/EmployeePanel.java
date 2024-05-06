@@ -79,12 +79,10 @@ public class EmployeePanel extends JPanel {
 		// Menu Panel
 		menuPanel = new JPanel();
 		menuPanel.setBackground(null);
-		menuPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
 		add(menuPanel, BorderLayout.CENTER);
 
-		menuPanel.setLayout(new MigLayout("center", "[grow,fill][200][100][200][100][200,grow][grow,fill]",
-				"[100px][][10px:30px:50px][grow][][10px:30px:50px]"));
+		menuPanel.setLayout(new MigLayout("center", "[grow,fill][200][100][200][100][300][grow,fill]", "[100px][][10px:30px:50px][][][10px:30px:50px]"));
 
 		ImageIcon profileIcon = new ImageIcon(getClass().getResource("/images/96x96/profile.png"));
 
@@ -122,7 +120,6 @@ public class EmployeePanel extends JPanel {
 		});
 		menuPanel.add(checkPayrollCBtn, "cell 5 1,growx,aligny center");
 
-		ImageIcon logoutIcon = new ImageIcon(getClass().getResource("/images/logout.png"));
 
 		JPanel printPayrollCBtn = new ButtonPanel(Color.decode("#002C4B"), printIcon, "Print Payslip",
 				"click to print Payslip");
@@ -133,8 +130,10 @@ public class EmployeePanel extends JPanel {
 			}
 		});
 		menuPanel.add(printPayrollCBtn, "cell 1 3,growx,aligny center");
+		
+		ImageIcon logoutIcon = new ImageIcon(getClass().getResource("/images/96x96/logout.png"));
 
-		JPanel logoutCBtn = new ButtonPanel(Color.decode("#002C4B"), logoutIcon, "Logout", null);
+		JPanel logoutCBtn = new ButtonPanel(Color.decode("#002C4B"), logoutIcon, "Logout", "click to logout");
 		logoutCBtn.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -142,7 +141,7 @@ public class EmployeePanel extends JPanel {
 
 			}
 		});
-		menuPanel.add(logoutCBtn, "cell 3 3,grow");
+		menuPanel.add(logoutCBtn, "cell 3 3,growx,aligny center");
 
 	}
 

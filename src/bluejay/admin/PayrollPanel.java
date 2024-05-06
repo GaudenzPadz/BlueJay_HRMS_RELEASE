@@ -212,16 +212,19 @@ public class PayrollPanel extends JPanel {
 		tfNetPay = new JTextField(10);
 		tfNetPay.setEditable(false);
 		payrollCalculationPanel.add(tfNetPay, "cell 8 8,growx");
-
-		JButton btnRefresh = new JButton("Refresh");
-		// a button to refresh the fields
-		// also the history table
-		payrollCalculationPanel.add(btnRefresh, "cell 5 10,growx");
 		payrollCalculationPanel.add(btnCalculate, "cell 7 10,growx");
 
 		JButton btnClear = new JButton("Clear");
 		btnClear.addActionListener(e -> clearFields());
 		payrollCalculationPanel.add(btnClear, "cell 8 10,growx");
+		
+				JButton btnRefresh = new JButton("Refresh");
+				// a button to refresh the fields
+				// also the history table
+				payrollCalculationPanel.add(btnRefresh, "flowx,cell 7 11,growx");
+		
+		JButton btnPrint = new JButton("Print Payroll");
+		payrollCalculationPanel.add(btnPrint, "cell 8 11,grow");
 
 		JLabel lblPayrollHistory = new JLabel("Payroll History");
 		lblPayrollHistory.setFont(new Font("SansSerif", Font.BOLD, 20));

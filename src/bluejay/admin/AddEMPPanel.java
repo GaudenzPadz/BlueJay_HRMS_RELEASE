@@ -79,7 +79,13 @@ public class AddEMPPanel extends JPanel {
 	private JComboBox<String> workTypeCombobox;
 	private Map<String, Integer> workTypeWageMap; // Store work type to wage mapping
 	private JDatePickerImpl DOBField;
-
+	private File selectedFile;
+	private JPanel imagePanel;
+	private JPanel uploadPanel;
+	private JLabel lblRate;
+	private JComboBox<String> departmentComboBox;
+	protected JLabel imageLabel;
+	
 	public AddEMPPanel(EmployeeDatabase DB) {
 		this.db = DB;
 
@@ -191,13 +197,12 @@ public class AddEMPPanel extends JPanel {
 		populateDepartmentComboBox(); // Populate the JComboBox with department data
 
 		departmentComboBox.addActionListener((ActionEvent e) -> {
-			JComboBox<String> comboBox = (JComboBox<String>) e.getSource();
-			String selectedDepartment = (String) comboBox.getSelectedItem();
+			String selectedDepartment = (String) departmentComboBox.getSelectedItem();
 
-			// Retrieve the department ID from the database
-			int departmentId = db.getDepartmentId(selectedDepartment);
-
-			updateWorkTypeComboBox(departmentId); // Update work types based on department
+			if (selectedDepartment != null && !selectedDepartment.equals("Select Department")) {
+				int departmentId = db.getDepartmentId(selectedDepartment);
+				updateWorkTypeComboBox(departmentId); // Populate based on department
+			}
 		});
 
 		panel.add(departmentComboBox, "cell 0 4,growx");
@@ -211,7 +216,6 @@ public class AddEMPPanel extends JPanel {
 		panel.add(lblRate, "cell 0 7");
 
 		wageField = new JTextField();
-		wageField.setEditable(false);
 		panel.add(wageField, "cell 0 8,growx");
 		wageField.setColumns(10);
 
@@ -371,13 +375,6 @@ public class AddEMPPanel extends JPanel {
 		}
 	}
 
-	private File selectedFile;
-	private JPanel imagePanel;
-	private JPanel uploadPanel;
-	private JLabel lblRate;
-	private JComboBox<String> departmentComboBox;
-	protected JLabel imageLabel;
-
 	private void uploadImage() {
 		JFileChooser fileChooser = new JFileChooser();
 		FileNameExtensionFilter filter = new FileNameExtensionFilter("Image files", "jpg", "jpeg", "png");
@@ -420,55 +417,52 @@ public class AddEMPPanel extends JPanel {
 			worker.execute(); // Start the SwingWorker
 		}
 	}
-	  boolean isValid = true;
-
-	  private boolean validateAndHighlight() {
-		    Color errorColor = Color.RED;
-		    Border errorBorder = BorderFactory.createLineBorder(errorColor);
-
-		    // Helper lambda to simplify validation
-		    BiConsumer<JTextField, String> validateTextField = (field, content) -> {
-		        if (content.trim().isEmpty()) {
-		            field.setBorder(errorBorder);
-		            isValid = false;
-		        } else {
-		            field.setBorder(UIManager.getBorder("TextField.border"));
-		        }
-		    };
-
-		    validateTextField.accept(fNameField, fNameField.getText());
-		    validateTextField.accept(lNameField, lNameField.getText());
-		    validateTextField.accept(addressField, addressField.getText());
-		    validateTextField.accept(emailField, emailField.getText());
-		    validateTextField.accept(telField, telField.getText());
-		    validateTextField.accept(usernameField, usernameField.getText());
-
-		    // Validate phone number with regex and length
-		    if (!isValidPhoneNumber(telField.getText())) {
-		        telField.setBorder(errorBorder);
-		        isValid = false;
-		    }
-
-		    // Date of Birth validation
-		    if (!isValidDate(DOBField.getJFormattedTextField().getText())) {
-		        DOBField.setBorder(errorBorder);
-		        isValid = false;
-		    }
-
-		    // Image validation
-		    if (!isValidImage(selectedFile)) {
-		        uploadBtn.setBorder(errorBorder);
-		        isValid = false;
-		    }
-
-		    // Validate workTypeField only if "Other" is selected
-		    if ("Other".equals(workTypeCombobox.getSelectedItem())) {
-		        validateTextField.accept(workTypeField, workTypeField.getText());
-		    }
-
-		    return isValid;
+	private boolean validateAndHighlight() {
+		boolean[] isValid = {true}; // Use an array to hold the boolean
+		Color errorColor = Color.RED;
+		Border errorBorder = BorderFactory.createLineBorder(errorColor);
+	
+		BiConsumer<JTextField, String> validateTextField = (field, content) -> {
+			if (content.trim().isEmpty()) {
+				field.setBorder(errorBorder);
+				System.out.println("Validation failed for: " + field.getName() + ", Content: " + content);
+				isValid[0] = false; // Modify the array element
+			} else {
+				field.setBorder(UIManager.getBorder("TextField.border"));
+			}
+		};
+	
+		validateTextField.accept(fNameField, fNameField.getText());
+		validateTextField.accept(lNameField, lNameField.getText());
+		validateTextField.accept(addressField, addressField.getText());
+		validateTextField.accept(emailField, emailField.getText());
+		validateTextField.accept(telField, telField.getText());
+		validateTextField.accept(usernameField, usernameField.getText());
+	
+		if (!isValidPhoneNumber(telField.getText())) {
+			telField.setBorder(errorBorder);
+			System.out.println("Invalid phone number: " + telField.getText());
+			isValid[0] = false;
 		}
-
+	
+		if (!isValidDate(DOBField.getJFormattedTextField().getText())) {
+			DOBField.setBorder(errorBorder);
+			System.out.println("Invalid date: " + DOBField.getJFormattedTextField().getText());
+			isValid[0] = false;
+		}
+	
+		if (!isValidImage(selectedFile)) {
+			uploadBtn.setBorder(errorBorder);
+			System.out.println("Invalid image file.");
+			isValid[0] = false;
+		}
+	
+		if ("Other".equals(workTypeCombobox.getSelectedItem())) {
+			validateTextField.accept(workTypeField, workTypeField.getText());
+		}
+	
+		return isValid[0];
+	}
 	private boolean isValidPhoneNumber(String phoneNumber) {
 		// This regex allows digits, +, and - characters
 		String phoneRegex = "^[\\d+\\-]+$";
@@ -479,13 +473,11 @@ public class AddEMPPanel extends JPanel {
 		return phoneNumber.matches(phoneRegex) && phoneNumber.length() >= minLength
 				&& phoneNumber.length() <= maxLength;
 	}
-	
+
 	private boolean isValidImage(File file) {
 		if (file == null) {
 			return false; // No file selected
 		}
-
-		String fileName = file.getName().toLowerCase();
 
 		// Check for reasonable file size (e.g., less than 5 MB)
 		long fileSize = file.length();
@@ -498,16 +490,16 @@ public class AddEMPPanel extends JPanel {
 	}
 
 	private boolean isValidDate(String dateText) {
-	    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-	    sdf.setLenient(false);
-	    try {
-	        sdf.parse(dateText);
-	        return true;
-	    } catch (ParseException e) {
-	        return false;
-	    }
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		sdf.setLenient(false);
+		try {
+			sdf.parse(dateText);
+			return true;
+		} catch (ParseException e) {
+			return false;
+		}
 	}
-	
+
 	private byte[] fileToByteArray(File file) {
 		try (FileInputStream fis = new FileInputStream(file)) {
 			return fis.readAllBytes();
@@ -529,8 +521,8 @@ public class AddEMPPanel extends JPanel {
 		int departmentId = db.getDepartmentId(selectedDepartment); // Get the department ID based on the name
 
 		String selectedWorkType = (String) workTypeCombobox.getSelectedItem();
-		int workTypeId = db.getWorkTypeId(selectedWorkType); 
-		
+		int workTypeId = db.getWorkTypeId(selectedWorkType);
+
 		String gender = radioMale.isSelected() ? "Male" : "Female";
 		String telNum = telField.getText();
 		String email = emailField.getText();
@@ -559,16 +551,16 @@ public class AddEMPPanel extends JPanel {
 		try {
 			byte[] imageData = fileToByteArray(selectedFile);
 			double wage = Double.valueOf(wageField.getText());
-		      // Get the current date using LocalDate
-	        LocalDate localDate = LocalDate.now();
+			// Get the current date using LocalDate
+			LocalDate localDate = LocalDate.now();
 
-	        // Convert LocalDate to java.sql.Date
-	        Date dateToday = Date.valueOf(localDate);
-	        double grossPay = 0;
-	        double netPay = 0;
+			// Convert LocalDate to java.sql.Date
+			Date dateToday = Date.valueOf(localDate);
+			double grossPay = 0;
+			double netPay = 0;
 			db.insertEMPData(firstName, lastName, address, workTypeId, wage, gender, telNum, DOB, email, imageData,
-					departmentId, dateToday, grossPay,netPay);
-			
+					departmentId, dateToday, grossPay, netPay);
+
 			db.insertEMPCredentials(firstName + " " + lastName, username, password, "Employee");
 
 			JOptionPane.showMessageDialog(null, "Employee added successfully.", "Success",
@@ -596,5 +588,4 @@ public class AddEMPPanel extends JPanel {
 		}
 	}
 
-	
 }

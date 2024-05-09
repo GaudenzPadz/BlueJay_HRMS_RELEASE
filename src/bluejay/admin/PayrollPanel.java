@@ -3,8 +3,13 @@ package bluejay.admin;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.print.PageFormat;
+import java.awt.print.Printable;
+import java.awt.print.PrinterException;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -21,12 +26,18 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfWriter;
 
+import java.io.FileOutputStream;
+import java.io.FileNotFoundException;
 import bluejay.Employee;
 import bluejayDB.EmployeeDatabase;
 import net.miginfocom.swing.MigLayout;
 
-public class PayrollPanel extends JPanel {
+public class PayrollPanel extends JPanel implements Printable {
 	private static final long serialVersionUID = 1L;
 	private JTextField tfEmployeeID, tfEmployeeName, tfEmployeeDepartment, tfEmployeeWorkType, tfRatePerDay,
 			tfDaysWorked, tfOvertimeHours, tfGrossPay, tfOvertimeRate, tfDeductionsSSS, tfDeductionsPagIbig,
@@ -37,7 +48,10 @@ public class PayrollPanel extends JPanel {
 	private DefaultTableModel EMPListModel;
 	private JTable EMPListTable;
 	private DefaultTableModel tableModel = new DefaultTableModel(new String[] { "ID", "Name", "Department", "Work Type",
-			"Gross Pay", "Rate Per Day", "Days Worked", "Overtime Hours", "Bonus", "Total Deductions", "Net Pay" }, 0);
+			"Gross Pay", "Rate Pe rDay", "Days Worked", "Overtime Hours", "Bonus", "Total Deductions", "Net Pay" }, 0);
+	private JTextField employmentTypeField;
+	private JTextField wageField;
+	private JTextField ProjectCompletedField;
 
 	public PayrollPanel(EmployeeDatabase db) {
 		this.db = db;
@@ -99,9 +113,7 @@ public class PayrollPanel extends JPanel {
 	}
 
 	private JPanel setupPayrollCalculationPanel() {
-		JPanel payrollCalculationPanel = new JPanel(new MigLayout("",
-				"[grow,center][100px][100px,grow][50px][100px][100px,grow][50px][100px][100px,grow][50px][grow,center]",
-				"[center][][][][][][][][][][][][][100px,grow][center]"));
+		JPanel payrollCalculationPanel = new JPanel(new MigLayout("", "[grow,center][100px][100px,grow][50px][100px][100px,grow][50px][100px][100px,grow][50px][grow,center]", "[center][][][][][][][][][][][][][][100px,grow][center]"));
 
 		JLabel lblPayrollCalculator = new JLabel("Payroll Calculator");
 		lblPayrollCalculator.setFont(new Font("SansSerif", Font.BOLD, 20));
@@ -145,36 +157,51 @@ public class PayrollPanel extends JPanel {
 		payrollCalculationPanel.add(lblDaysWorked, "cell 4 5,alignx left");
 		tfDaysWorked = new JTextField();
 		payrollCalculationPanel.add(tfDaysWorked, "cell 5 5,growx");
+		
+		JLabel lblNewLabel = new JLabel("Employment Type:");
+		payrollCalculationPanel.add(lblNewLabel, "cell 1 6");
+		
+		employmentTypeField = new JTextField();
+		payrollCalculationPanel.add(employmentTypeField, "cell 2 6,growx");
+		employmentTypeField.setColumns(10);
+		employmentTypeField.setText("Part Time");
+		
+		JLabel lb = new JLabel("Rate:");
+		payrollCalculationPanel.add(lb, "cell 4 6,alignx left");
+		
+		wageField = new JTextField();
+		payrollCalculationPanel.add(wageField, "cell 5 6,growx");
+		wageField.setColumns(10);
 
 		JLabel lbWorkType = new JLabel("Work Type");
-		payrollCalculationPanel.add(lbWorkType, "cell 1 6,alignx left");
+		payrollCalculationPanel.add(lbWorkType, "cell 1 7,alignx left");
 
 		tfEmployeeWorkType = new JTextField();
 		tfEmployeeWorkType.setEditable(false);
-		payrollCalculationPanel.add(tfEmployeeWorkType, "cell 2 6,growx");
+		payrollCalculationPanel.add(tfEmployeeWorkType, "cell 2 7,growx");
 		tfEmployeeWorkType.setColumns(10);
 
 		JLabel lblOvertimeHours = new JLabel("Overtime Hours:");
-		payrollCalculationPanel.add(lblOvertimeHours, "cell 4 6,alignx left");
+		payrollCalculationPanel.add(lblOvertimeHours, "cell 4 7,alignx left");
 		tfOvertimeHours = new JTextField();
-		payrollCalculationPanel.add(tfOvertimeHours, "cell 5 6,growx");
+		payrollCalculationPanel.add(tfOvertimeHours, "cell 5 7,growx");
 
 		JLabel lbOvertimeRate = new JLabel("Overtime Rate");
-		payrollCalculationPanel.add(lbOvertimeRate, "cell 4 7,alignx left");
+		payrollCalculationPanel.add(lbOvertimeRate, "cell 4 8,alignx left");
 
 		// base the OT rate by the hours of overtime
 		// if 2 hours overtime then OTrate = 400
 		// 1 hour is == 200 otRate
 		tfOvertimeRate = new JTextField(10);
 		tfOvertimeRate.setEditable(false);
-		payrollCalculationPanel.add(tfOvertimeRate, "cell 5 7,growx");
+		payrollCalculationPanel.add(tfOvertimeRate, "cell 5 8,growx");
 
 		JLabel lbBonus = new JLabel("Bonus");
-		payrollCalculationPanel.add(lbBonus, "cell 4 8,alignx left");
+		payrollCalculationPanel.add(lbBonus, "cell 4 9,alignx left");
 
 		tfBonus = new JTextField(10);
-		payrollCalculationPanel.add(tfBonus, "cell 5 8,growx");
-		payrollCalculationPanel.add(lblNetPay, "cell 7 8,alignx center");
+		payrollCalculationPanel.add(tfBonus, "cell 5 9,growx");
+		payrollCalculationPanel.add(lblNetPay, "cell 7 9,alignx center");
 
 		// Deductions
 		JLabel lblDeductions = new JLabel("Deductions");
@@ -198,42 +225,79 @@ public class PayrollPanel extends JPanel {
 
 		JLabel lblAdvanced = new JLabel("Advanced:");
 		tfAdvanced = new JTextField();
-		payrollCalculationPanel.add(lblAdvanced, "cell 7 6,alignx left");
-		payrollCalculationPanel.add(tfAdvanced, "cell 8 6,growx");
+		payrollCalculationPanel.add(lblAdvanced, "cell 7 7,alignx left");
+		payrollCalculationPanel.add(tfAdvanced, "cell 8 7,growx");
 
 		JLabel lblTotalDeductions = new JLabel("Total Deductions:");
 		tfTotalDeductions = new JTextField();
-		payrollCalculationPanel.add(lblTotalDeductions, "cell 7 7,alignx left");
-		payrollCalculationPanel.add(tfTotalDeductions, "cell 8 7,growx");
+		payrollCalculationPanel.add(lblTotalDeductions, "cell 7 8,alignx left");
+		payrollCalculationPanel.add(tfTotalDeductions, "cell 8 8,growx");
 
 		JButton btnCalculate = new JButton("Calculate");
 		btnCalculate.addActionListener(e -> calculatePayroll());
 
 		tfNetPay = new JTextField(10);
 		tfNetPay.setEditable(false);
-		payrollCalculationPanel.add(tfNetPay, "cell 8 8,growx");
-		payrollCalculationPanel.add(btnCalculate, "cell 7 10,growx");
+		payrollCalculationPanel.add(tfNetPay, "cell 8 9,growx");
+		
+		JLabel ProjectCompleted = new JLabel("Project Completed: ");
+		payrollCalculationPanel.add(ProjectCompleted, "cell 4 10,alignx left");
+		
+		ProjectCompletedField = new JTextField();
+		payrollCalculationPanel.add(ProjectCompletedField, "cell 5 10,growx");
+		ProjectCompletedField.setColumns(10);
+		payrollCalculationPanel.add(btnCalculate, "cell 7 11,growx");
 
 		JButton btnClear = new JButton("Clear");
 		btnClear.addActionListener(e -> clearFields());
-		payrollCalculationPanel.add(btnClear, "cell 8 10,growx");
-		
-				JButton btnRefresh = new JButton("Refresh");
-				// a button to refresh the fields
-				// also the history table
-				payrollCalculationPanel.add(btnRefresh, "flowx,cell 7 11,growx");
-		
+		payrollCalculationPanel.add(btnClear, "cell 8 11,growx");
+
+		JButton btnRefresh = new JButton("Refresh");
+		// a button to refresh the fields
+		// also the history table
+		payrollCalculationPanel.add(btnRefresh, "flowx,cell 7 12,growx");
+
 		JButton btnPrint = new JButton("Print Payroll");
-		payrollCalculationPanel.add(btnPrint, "cell 8 11,grow");
+		btnPrint.addActionListener(new java.awt.event.ActionListener() {
+			public void actionPerformed(java.awt.event.ActionEvent e) {
+				Document document = new Document();
+				try {
+					PdfWriter.getInstance(document, new FileOutputStream("PayrollDetails.pdf"));
+					document.open();
+					com.itextpdf.text.Font font = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 12, com.itextpdf.text.Font.NORMAL);
+					
+					document.add(new Paragraph("Payroll Details", font));
+					document.add(new Paragraph("Employee Name: " + tfEmployeeName.getText(), font));
+					document.add(new Paragraph("Employee ID: " + tfEmployeeID.getText(), font));
+					document.add(new Paragraph("Department: " + tfEmployeeDepartment.getText(), font));
+					document.add(new Paragraph("Work Type: " + tfEmployeeWorkType.getText(), font));
+					document.add(new Paragraph("Days Worked: " + tfDaysWorked.getText(), font));
+					document.add(new Paragraph("Rate Per Day: " + tfRatePerDay.getText(), font));
+					document.add(new Paragraph("Gross Pay: " + tfGrossPay.getText(), font));
+					document.add(new Paragraph("Net Pay: " + tfNetPay.getText(), font));
+					document.add(new Paragraph("Deductions: ", font));
+					document.add(new Paragraph("   SSS: " + tfDeductionsSSS.getText(), font));
+					document.add(new Paragraph("   PhilHealth: " + tfDeductionsPhilHealth.getText(), font));
+					document.add(new Paragraph("   PAG-IBIG: " + tfDeductionsPagIbig.getText(), font));
+					document.add(new Paragraph("Date: " + new Date(System.currentTimeMillis()).toString(), font));
+					
+					document.close();
+					JOptionPane.showMessageDialog(null, "PDF file was created successfully!");
+				} catch (DocumentException | FileNotFoundException ex) {
+					JOptionPane.showMessageDialog(null, "Error in PDF creation: " + ex.getMessage());
+				}
+			}
+		});
+		payrollCalculationPanel.add(btnPrint, "cell 8 12,grow");
 
 		JLabel lblPayrollHistory = new JLabel("Payroll History");
 		lblPayrollHistory.setFont(new Font("SansSerif", Font.BOLD, 20));
-		payrollCalculationPanel.add(lblPayrollHistory, "cell 1 12 5 1");
+		payrollCalculationPanel.add(lblPayrollHistory, "cell 1 13 5 1");
 
 		// Table for payroll history
 		payrollHistoryTable = new JTable(tableModel);
 		JScrollPane scrollPane = new JScrollPane(payrollHistoryTable);
-		payrollCalculationPanel.add(scrollPane, "cell 0 13 11 1,grow");
+		payrollCalculationPanel.add(scrollPane, "cell 0 14 11 1,grow");
 
 		refreshTable(tableModel); // Refresh the payroll history on initialization
 
@@ -259,7 +323,6 @@ public class PayrollPanel extends JPanel {
 			String employeeName = tfEmployeeName.getText();
 			String employeeDepartment = tfEmployeeDepartment.getText();
 			String employeeWorkType = tfEmployeeWorkType.getText();
-
 			double ratePerDay = Double.parseDouble(tfRatePerDay.getText());
 			int daysWorked = Integer.parseInt(tfDaysWorked.getText());
 			double overtimeHours = Double.parseDouble(tfOvertimeHours.getText());
@@ -267,30 +330,45 @@ public class PayrollPanel extends JPanel {
 			double bonus = Double.parseDouble(tfBonus.getText());
 
 			// Calculate payroll
-			double basicSalary = ratePerDay * daysWorked;
-			double overtimePay = overtimeHours * ratePerDay; // Use the same rate per day
-			double grossPay = basicSalary + overtimePay + bonus;
+			if (employmentTypeField.getText().equalsIgnoreCase("part time")) {
+				double partTimeRate = ratePerDay * daysWorked * 0.5;
+				System.out.println(partTimeRate);
+				tfNetPay.setText(String.format("%.2f", partTimeRate));
+				//disable overtime, bonus, overtimerate, and deductions  wageField 
+				//pag part time yung ung rate per day ay mahahati
+            } else if (employmentTypeField.getText().equalsIgnoreCase("Project Based")) 											{
+				double projectBasedRate = ratePerDay * Integer.parseInt(ProjectCompletedField.getText());
+				System.out.println(projectBasedRate);
+				tfNetPay.setText(String.format("%.2f", projectBasedRate));
+				wageField.setText(String.valueOf(ratePerDay));
+				//disable all salary and deduction except grosspay, rate, and project completed
+				//pag project based yung ung rate per day ay i mumultiply sa project completed
+			} else if  (employmentTypeField.getText().equalsIgnoreCase("full time")) {
+		       //disable project completed
+			
+				double basicSalary = ratePerDay * daysWorked;
+				double overTimePay = overtimeHours * ratePerDay; // Use the same rate per day
+				double grossPay = basicSalary + overTimePay + bonus;
+				// Deductions
+				double sss = Double.parseDouble(tfDeductionsSSS.getText());
+				double pagIbig = Double.parseDouble(tfDeductionsPagIbig.getText());
+				double philHealth = Double.parseDouble(tfDeductionsPhilHealth.getText());
+				double totalDeductions = sss + pagIbig + philHealth + advanced;
+				double netPay = grossPay - totalDeductions;
 
-			// Deductions
-			double sss = Double.parseDouble(tfDeductionsSSS.getText());
-			double pagIbig = Double.parseDouble(tfDeductionsPagIbig.getText());
-			double philHealth = Double.parseDouble(tfDeductionsPhilHealth.getText());
-			double totalDeductions = sss + pagIbig + philHealth + advanced;
-			double netPay = grossPay - totalDeductions;
+				// Update the form with calculated values
+				tfGrossPay.setText(String.format("%.2f", grossPay));
+				tfTotalDeductions.setText(String.format("%.2f", totalDeductions));
+				tfNetPay.setText(String.format("%.2f", netPay));
 
-			// Update the form with calculated values
-			tfGrossPay.setText(String.format("%.2f", grossPay));
-			tfTotalDeductions.setText(String.format("%.2f", totalDeductions));
-			tfNetPay.setText(String.format("%.2f", netPay));
+				// Save the payroll record to the database
+				db.insertPayroll(employeeId, employeeName, employeeDepartment, employeeWorkType, grossPay, ratePerDay,
+						daysWorked, (int) overtimeHours, bonus, totalDeductions, netPay,
+						new Date(System.currentTimeMillis())); // Use the current date
 
-			// Save the payroll record to the database
-			db.insertPayroll(employeeId, employeeName, employeeDepartment, employeeWorkType, grossPay, ratePerDay,
-					daysWorked, (int) overtimeHours, bonus, totalDeductions, netPay,
-					new Date(System.currentTimeMillis())); // Use the current date
-
-			// Refresh the table to show the new record
-			refreshTable(tableModel);
-
+				// Refresh the table to show the new record
+				refreshTable(tableModel);
+			}
 		} catch (NumberFormatException e) {
 			JOptionPane.showMessageDialog(this, "Please enter valid numeric values for all payroll fields.",
 					"Input Error", JOptionPane.ERROR_MESSAGE);
@@ -406,7 +484,7 @@ public class PayrollPanel extends JPanel {
 	}
 
 	private void loadDeductions() {
-		ResultSet rs = db.getDeductions(); 
+		ResultSet rs = db.getDeductions();
 		try {
 			if (rs.next()) {
 				tfDeductionsSSS.setText(String.valueOf(rs.getInt("SSS")));
@@ -423,4 +501,57 @@ public class PayrollPanel extends JPanel {
 		}
 	}
 
+	@Override
+	public int print(Graphics g, PageFormat pf, int pageIndex) throws PrinterException {
+	    if (pageIndex > 0) {
+	        return NO_SUCH_PAGE;
+	    }
+
+	    Graphics2D g2d = (Graphics2D) g;
+	    g2d.translate(pf.getImageableX(), pf.getImageableY());
+
+	    // Customize printing font and layout
+	    Font font = new Font("Arial", Font.PLAIN, 12);
+	    g2d.setFont(font);
+	    int x = 50; // x-coordinate for printing
+	    int y = 30; // Adjusted y-coordinate for starting the box below the header
+	    int payslipHeight = 350; // Height of the payslip rectangle
+
+	    // Draw payslip box
+	    g2d.drawRect(x, y, 300, payslipHeight);
+
+	    // Display net pay
+	    String formattedNetPay = String.format("%.2f", Double.parseDouble(tfNetPay.getText()));
+
+	    // Print header
+	    g2d.drawString("Weld Well Payslip", x + 100, y + 20);
+	    g2d.drawString("Net Pay: " + formattedNetPay, x + 10, y + 230);
+	    // Print payslip details
+	    g2d.drawString("--------------------------------------", x + 10, y + 40);
+	    g2d.drawString("Employee Information", x + 10, y + 50);
+	    g2d.drawString("--------------------------------------", x + 10, y + 60);
+	    g2d.drawString("Employee Name: " + tfEmployeeName.getText(), x + 10, y + 70);
+	    g2d.drawString("Employee Number: " + tfEmployeeID.getText(), x + 10, y + 85);
+	    g2d.drawString("Department: " + tfEmployeeDepartment.getText(), x + 10, y + 100);
+	    g2d.drawString("Work Type: " + tfEmployeeWorkType.getText(), x + 10, y + 115);
+	    g2d.drawString("Days Worked: " + tfDaysWorked.getText(), x + 10, y + 130);
+	    g2d.drawString("Daily Rate: " + tfRatePerDay.getText(), x + 10, y + 145);
+	    g2d.drawString("--------------------------------------", x + 10, y + 155);
+	    g2d.drawString("Earnings:", x + 10, y + 165);
+	    g2d.drawString("SSS: " + tfDeductionsSSS.getText(), x + 10, y + 180);
+	    g2d.drawString("PhilHealth Premium: " + tfDeductionsPhilHealth.getText(), x + 10, y + 195);
+	    g2d.drawString("Pag-IBIG Premium: " + tfDeductionsPagIbig.getText(), x + 10, y + 210);
+	    g2d.drawString("--------------------------------------", x + 10, y + 220);
+
+	    // Print the date below the payslip details
+	    String dateString = "Date: " + new Date(System.currentTimeMillis()).toString();
+	    g2d.drawString("--------------------------------------", x + 10, y + 265);
+	    g2d.drawString(dateString, x + 10, y + 280);
+	    g2d.drawString("--------------------------------------", x + 10, y + 295);
+	    g2d.drawString("Comapany Gmail:WeldWellOfcial@gmail.com", x + 10, y + 310);
+	    g2d.drawString("Contact Number:09084130846", x + 10, y + 325);
+	    g2d.drawString("--------------------------------------", x + 10, y + 345);
+
+	    return PAGE_EXISTS;
+	}
 }

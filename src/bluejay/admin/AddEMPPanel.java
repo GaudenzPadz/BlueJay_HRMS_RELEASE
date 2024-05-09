@@ -5,8 +5,10 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.sql.Date;
 import java.sql.ResultSet;
@@ -59,7 +61,7 @@ public class AddEMPPanel extends JPanel {
 	private JTextField workTypeField;
 	private JTextField addressField;
 	private JTextField emailField;
-	private JTextField telField;
+	private JTextField contactField;
 	private JTextField usernameField;
 	private JPasswordField passwordField;
 	private JSeparator separator;
@@ -85,14 +87,16 @@ public class AddEMPPanel extends JPanel {
 	private JLabel lblRate;
 	private JComboBox<String> departmentComboBox;
 	protected JLabel imageLabel;
-	
+	private JComboBox<String> employmentTypeComboBox;
+	private JLabel lblNewLabel_8;
+
 	public AddEMPPanel(EmployeeDatabase DB) {
 		this.db = DB;
 
 		setLayout(new MigLayout("center", "[center]", "[center]"));
 
 		panel = new JPanel(new MigLayout("wrap,fillx,insets 35 45 30 45", "[pref!,grow,fill]",
-				"[][][grow][][][][][][][][][][][][][][][][][][][][][][][][][]"));
+				"[][][grow][][][][][][][][][][][][][][][][][][][][][][][][][][][]"));
 		sp = new JScrollPane(panel);
 		sp.putClientProperty(FlatClientProperties.STYLE,
 				"arc:20;" + "[light]background:darken(@background,3%);" + "[dark]background:lighten(@background,3%)");
@@ -110,6 +114,7 @@ public class AddEMPPanel extends JPanel {
 		// Initialize work type to wage mapping
 		workTypeWageMap = new HashMap<>();
 		populateWorkTypeWageMap(); // Load data from the database into the map
+		employmentTypeComboBox = new JComboBox<>();
 
 		workTypeCombobox = new JComboBox<>();
 		wageField = new JTextField();
@@ -133,10 +138,8 @@ public class AddEMPPanel extends JPanel {
 		workTypeCombobox.addActionListener((ActionEvent e) -> {
 			if ("Other".equals(workTypeCombobox.getSelectedItem())) {
 				workTypeField.setEnabled(true); // Enable the JTextField for custom input
-				wageField.setEditable(true); // Set as non-editable
 			} else {
 				workTypeField.setEnabled(false); // Disable if "Other" is not selected
-				wageField.setEditable(false); // Set as non-editable
 			}
 		});
 
@@ -157,9 +160,9 @@ public class AddEMPPanel extends JPanel {
 		genderPanel.add(radioMale);
 		genderPanel.add(radioFemale);
 
-		JLabel lblNewLabel_3 = new JLabel("Telephone Number");
-		telField = new JTextField(10);
-		telField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter Telephone Number");
+		JLabel lblNewLabel_3 = new JLabel("Contact Number");
+		contactField = new JTextField(10);
+		contactField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter Contact Number");
 
 		uploadPanel = new JPanel();
 		panel.add(uploadPanel, "cell 0 0");
@@ -193,8 +196,9 @@ public class AddEMPPanel extends JPanel {
 
 		panel.add(new JLabel("Department"), "cell 0 3");
 
-		departmentComboBox = new JComboBox();
+		departmentComboBox = new JComboBox<String>();
 		populateDepartmentComboBox(); // Populate the JComboBox with department data
+		employmentTypeComboBox.setEnabled(false); // Disable Employment Type comboBox
 
 		departmentComboBox.addActionListener((ActionEvent e) -> {
 			String selectedDepartment = (String) departmentComboBox.getSelectedItem();
@@ -202,47 +206,54 @@ public class AddEMPPanel extends JPanel {
 			if (selectedDepartment != null && !selectedDepartment.equals("Select Department")) {
 				int departmentId = db.getDepartmentId(selectedDepartment);
 				updateWorkTypeComboBox(departmentId); // Populate based on department
+				employmentTypeComboBox.setEnabled(true); // Enable Employment Type comboBox
+				populateEmploymentTypeComboBox(); // Populate Employment Type comboBox
 			}
 		});
 
 		panel.add(departmentComboBox, "cell 0 4,growx");
 
-		panel.add(new JLabel("Work Type"), "cell 0 5");
+		lblNewLabel_8 = new JLabel("Employment Type");
+		panel.add(lblNewLabel_8, "cell 0 5");
 
-		panel.add(workTypeCombobox, "flowx,cell 0 6,alignx right");
-		panel.add(workTypeField, "cell 0 6,alignx right");
+		panel.add(employmentTypeComboBox, "cell 0 6,growx");
+
+		panel.add(new JLabel("Work Type"), "cell 0 7");
+
+		panel.add(workTypeCombobox, "flowx,cell 0 8,alignx right");
+		panel.add(workTypeField, "cell 0 8,alignx right");
 
 		lblRate = new JLabel("Wage");
-		panel.add(lblRate, "cell 0 7");
+		panel.add(lblRate, "cell 0 9");
 
 		wageField = new JTextField();
-		panel.add(wageField, "cell 0 8,growx");
+		panel.add(wageField, "cell 0 10,growx");
 		wageField.setColumns(10);
 
-		panel.add(label, "cell 0 9");
+		panel.add(label, "cell 0 11");
 
-		panel.add(addressField, "cell 0 10,growx");
+		panel.add(addressField, "cell 0 12,growx");
 
 		JLabel lblNewLabel_7 = new JLabel("Employee's ID:");
-		panel.add(lblNewLabel_7, "flowx,cell 0 11");
+		panel.add(lblNewLabel_7, "flowx,cell 0 13");
 
-		panel.add(lblNewLabel_2, "cell 0 12,gapy 5");
+		panel.add(lblNewLabel_2, "cell 0 14,gapy 5");
 
-		panel.add(genderPanel, "cell 0 13");
+		panel.add(genderPanel, "cell 0 15");
 
-		panel.add(lblNewLabel_3, "cell 0 14");
+		panel.add(lblNewLabel_3, "cell 0 16");
 
-		panel.add(telField, "flowx,cell 0 15,growx");
+		panel.add(contactField, "flowx,cell 0 17,growx");
 		JLabel lblNewLabel_4 = new JLabel("Email");
 
-		panel.add(lblNewLabel_4, "cell 0 16");
+		panel.add(lblNewLabel_4, "cell 0 18");
 		emailField = new JTextField(10);
 		emailField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter email");
 
-		panel.add(emailField, "cell 0 17,growx");
+		panel.add(emailField, "cell 0 19,growx");
 
 		JLabel lblNewLabel_6 = new JLabel("Date of Birth");
-		panel.add(lblNewLabel_6, "cell 0 18");
+		panel.add(lblNewLabel_6, "cell 0 20");
 
 		// Initialize the date picker for Date of Birth
 		SqlDateModel model = new SqlDateModel();
@@ -274,30 +285,30 @@ public class AddEMPPanel extends JPanel {
 
 		panel.add(DOBField, "cell 0 19,growx");
 
-		panel.add(new JSeparator(), "cell 0 20,gapy 5 5");
+		panel.add(new JSeparator(), "cell 0 22,gapy 5 5");
 
 		JLabel lblNewLabel = new JLabel("Username");
-		panel.add(lblNewLabel, "cell 0 21");
+		panel.add(lblNewLabel, "cell 0 23");
 
 		usernameField = new JTextField(10);
 		usernameField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter username");
-		panel.add(usernameField, "cell 0 22,growx");
+		panel.add(usernameField, "cell 0 24,growx");
 
 		JLabel lblNewLabel_5 = new JLabel("Password");
-		panel.add(lblNewLabel_5, "cell 0 23");
+		panel.add(lblNewLabel_5, "cell 0 25");
 
 		passwordField = new JPasswordField();
 		passwordField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter password");
 
-		panel.add(passwordField, "cell 0 24,growx");
+		panel.add(passwordField, "cell 0 26,growx");
 		passwordField.setColumns(10);
 
 		separator = new JSeparator();
-		panel.add(separator, "cell 0 25,growx");
+		panel.add(separator, "cell 0 27,growx");
 
 		btnNewButton = new JButton("Add Employee");
 		btnNewButton.addActionListener(this::addButtonClicked);
-		panel.add(btnNewButton, "cell 0 26");
+		panel.add(btnNewButton, "cell 0 28");
 
 		textField_4 = new JTextField();
 		try {
@@ -310,9 +321,25 @@ public class AddEMPPanel extends JPanel {
 		}
 
 		textField_4.setEditable(false);
-		panel.add(textField_4, "cell 0 11");
+		panel.add(textField_4, "cell 0 13");
 		textField_4.setColumns(10);
 
+		// // Add an import CSV button below the existing Add Employee button
+		// JButton importCSVButton = new JButton("Import CSV");
+		// importCSVButton.addActionListener((ActionEvent e) -> {
+		// JFileChooser fileChooser = new JFileChooser();
+		// FileNameExtensionFilter filter = new FileNameExtensionFilter("CSV Files",
+		// "csv");
+		// fileChooser.setFileFilter(filter);
+
+		// int result = fileChooser.showOpenDialog(null);
+
+		// if (result == JFileChooser.APPROVE_OPTION) {
+		// File selectedFile = fileChooser.getSelectedFile();
+		// addEmployeeFromCSV(selectedFile);
+		// }
+		// });
+		// panel.add(importCSVButton, "cell 0 27");
 	}
 
 	private void populateDepartmentComboBox() {
@@ -326,6 +353,21 @@ public class AddEMPPanel extends JPanel {
 		} catch (SQLException ex) {
 			ex.printStackTrace();
 			JOptionPane.showMessageDialog(null, "Error fetching departments.", "Error", JOptionPane.ERROR_MESSAGE);
+		}
+	}
+
+	// Populate Employment Type based on employment_type field
+	private void populateEmploymentTypeComboBox() {
+		try {
+			ResultSet rs = db.getEmploymentTypes(); // Fetch employment type data
+			employmentTypeComboBox.removeAllItems(); // Clear existing items
+			while (rs.next()) {
+				String employmentType = rs.getString("type");
+				employmentTypeComboBox.addItem(employmentType); // Add to JComboBox
+			}
+		} catch (SQLException ex) {
+			ex.printStackTrace();
+			JOptionPane.showMessageDialog(null, "Error fetching employment types.", "Error", JOptionPane.ERROR_MESSAGE);
 		}
 	}
 
@@ -417,11 +459,12 @@ public class AddEMPPanel extends JPanel {
 			worker.execute(); // Start the SwingWorker
 		}
 	}
+
 	private boolean validateAndHighlight() {
-		boolean[] isValid = {true}; // Use an array to hold the boolean
+		boolean[] isValid = { true }; // Use an array to hold the boolean
 		Color errorColor = Color.RED;
 		Border errorBorder = BorderFactory.createLineBorder(errorColor);
-	
+
 		BiConsumer<JTextField, String> validateTextField = (field, content) -> {
 			if (content.trim().isEmpty()) {
 				field.setBorder(errorBorder);
@@ -431,38 +474,39 @@ public class AddEMPPanel extends JPanel {
 				field.setBorder(UIManager.getBorder("TextField.border"));
 			}
 		};
-	
+
 		validateTextField.accept(fNameField, fNameField.getText());
 		validateTextField.accept(lNameField, lNameField.getText());
 		validateTextField.accept(addressField, addressField.getText());
 		validateTextField.accept(emailField, emailField.getText());
-		validateTextField.accept(telField, telField.getText());
+		validateTextField.accept(contactField, contactField.getText());
 		validateTextField.accept(usernameField, usernameField.getText());
-	
-		if (!isValidPhoneNumber(telField.getText())) {
-			telField.setBorder(errorBorder);
-			System.out.println("Invalid phone number: " + telField.getText());
+
+		if (!isValidPhoneNumber(contactField.getText())) {
+			contactField.setBorder(errorBorder);
+			System.out.println("Invalid phone number: " + contactField.getText());
 			isValid[0] = false;
 		}
-	
+
 		if (!isValidDate(DOBField.getJFormattedTextField().getText())) {
 			DOBField.setBorder(errorBorder);
 			System.out.println("Invalid date: " + DOBField.getJFormattedTextField().getText());
 			isValid[0] = false;
 		}
-	
+
 		if (!isValidImage(selectedFile)) {
 			uploadBtn.setBorder(errorBorder);
 			System.out.println("Invalid image file.");
 			isValid[0] = false;
 		}
-	
+
 		if ("Other".equals(workTypeCombobox.getSelectedItem())) {
 			validateTextField.accept(workTypeField, workTypeField.getText());
 		}
-	
+
 		return isValid[0];
 	}
+
 	private boolean isValidPhoneNumber(String phoneNumber) {
 		// This regex allows digits, +, and - characters
 		String phoneRegex = "^[\\d+\\-]+$";
@@ -524,7 +568,7 @@ public class AddEMPPanel extends JPanel {
 		int workTypeId = db.getWorkTypeId(selectedWorkType);
 
 		String gender = radioMale.isSelected() ? "Male" : "Female";
-		String telNum = telField.getText();
+		String telNum = contactField.getText();
 		String email = emailField.getText();
 		String username = usernameField.getText();
 		String password = new String(passwordField.getPassword());
@@ -558,10 +602,10 @@ public class AddEMPPanel extends JPanel {
 			Date dateToday = Date.valueOf(localDate);
 			double grossPay = 0;
 			double netPay = 0;
-			db.insertEMPData(firstName, lastName, address, workTypeId, wage, gender, telNum, DOB, email, imageData,
-					departmentId, dateToday, grossPay, netPay);
+			db.insertEMPData(newId, firstName, lastName, address, workTypeId, wage, gender, telNum, DOB, email,
+					imageData, departmentId, dateToday, grossPay, netPay);
 
-			db.insertEMPCredentials(firstName + " " + lastName, username, password, "Employee");
+			db.insertEMPCredentials(newId, firstName + " " + lastName, username, password, "Employee");
 
 			JOptionPane.showMessageDialog(null, "Employee added successfully.", "Success",
 					JOptionPane.INFORMATION_MESSAGE);
@@ -570,7 +614,7 @@ public class AddEMPPanel extends JPanel {
 			fNameField.setText("");
 			lNameField.setText("");
 			addressField.setText("");
-			telField.setText("");
+			contactField.setText("");
 			emailField.setText("");
 			DOBField.getModel().setValue(null); // Reset the model value
 			workTypeCombobox.setSelectedItem(null);
@@ -588,4 +632,39 @@ public class AddEMPPanel extends JPanel {
 		}
 	}
 
+	private void addEmployeeFromCSV(File csvFile) {
+		try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
+			String line;
+			while ((line = br.readLine()) != null) {
+				String[] data = line.split(","); // Assuming CSV format is comma-separated
+				fNameField.setText(data[0]);
+				lNameField.setText(data[1]);
+				addressField.setText(data[2]);
+				departmentComboBox.setSelectedItem(data[3]);
+				workTypeCombobox.setSelectedItem(data[4]);
+				wageField.setText(data[5]);
+				if ("Male".equals(data[6])) {
+					radioMale.setSelected(true);
+				} else {
+					radioFemale.setSelected(true);
+				}
+				contactField.setText(data[7]);
+				emailField.setText(data[8]);
+				usernameField.setText(data[9]);
+				passwordField.setText(data[10]);
+				String dob = data[11]; // Date of Birth in format yyyy-MM-dd
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+				// Convert java.sql.Date to java.util.Date before setting it in the
+				// JDatePickerImpl
+				Date dobDate = new Date(sdf.parse(dob).getTime());
+				DOBField.getModel().setDate(dobDate.toLocalDate().getYear(), dobDate.toLocalDate().getMonthValue() - 1,
+						dobDate.toLocalDate().getDayOfMonth());
+				// Additional processing and validation can be added here
+			}
+		} catch (IOException | ParseException ex) {
+			ex.printStackTrace();
+			JOptionPane.showMessageDialog(null, "An error occurred while adding employees from CSV.", "Error",
+					JOptionPane.ERROR_MESSAGE);
+		}
+	}
 }

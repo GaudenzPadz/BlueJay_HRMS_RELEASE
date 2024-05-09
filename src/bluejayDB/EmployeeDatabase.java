@@ -67,12 +67,23 @@ public class EmployeeDatabase {
 		}
 	}
 
+	public ResultSet getUsersData() throws SQLException {
+		if (connection == null) {
+			throw new SQLException("Connection is null. Make sure to establish the connection.");
+		}
+		String query = "SELECT employee_ID FROM users WHERE username = ?";
+		PreparedStatement statement = connection.prepareStatement(query);
+
+		return statement.executeQuery();
+	}
+
+	
 	public Employee getEmployeeDataByUsername(String username) {
 		try {
-			String sql = "SELECT e.*, t.work_type,  d.department_name AS department FROM employees e "
+			String sql = "SELECT e.*, t.work_type, d.department_name AS department FROM employees e "
 					+ "LEFT JOIN types t ON e.work_type_id = t.id "
 					+ "LEFT JOIN department d ON e.department_id = d.department_id "
-					+ "WHERE e.email = (SELECT email FROM users WHERE username = ?)";
+					+ "WHERE e.employee_id = (SELECT employee_ID FROM users WHERE username = ?)";
 			PreparedStatement statement = connection.prepareStatement(sql);
 			statement.setString(1, username);
 			ResultSet rs = statement.executeQuery();
@@ -84,7 +95,7 @@ public class EmployeeDatabase {
 				employee.setMiddleName(rs.getString("middle_name"));
 				employee.setLastName(rs.getString("last_name"));
 				employee.setAddress(rs.getString("address"));
-				employee.setDepartment(rs.getString("department")); // Ensure this is correct
+				employee.setDepartment(rs.getString("department"));
 				employee.setWorkType(rs.getString("work_type"));
 				employee.setBasicSalary(rs.getDouble("rate"));
 				employee.setGrossPay(rs.getDouble("grossPay"));
@@ -100,7 +111,6 @@ public class EmployeeDatabase {
 				}
 
 				// converts unix timestamp into a java.sql.Date
-
 				employee.setDateHired(Date.valueOf(Instant.ofEpochSecond(rs.getInt("date_hired"))
 						.atZone(ZoneId.systemDefault()).toLocalDateTime().toLocalDate()));
 
@@ -296,6 +306,16 @@ public class EmployeeDatabase {
 		}
 
 	}
+	public ResultSet getEmploymentTypes() {
+		try {
+			PreparedStatement statement = connection.prepareStatement("SELECT * FROM employment_type");
+			return statement.executeQuery();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+
+	}
 
 	public ResultSet getDeductions() {
 		try {
@@ -308,16 +328,15 @@ public class EmployeeDatabase {
 
 	}
 
-	public void insertEMPData(String first_name, String last_name, String address, int workTypeId, double rate,
+	public void insertEMPData(int newId, String first_name, String last_name, String address, int workTypeId, double rate,
 			String gender, String telNum, java.sql.Date DOB, String email, byte[] imageData, int departmentId,
 			java.sql.Date date_hired, double grossPay, double netPay) {
 
 		try {
-			String sql = "INSERT INTO employees (id, first_name, last_name, address, work_type_id, rate, grossPay, netPay, gender, tel_number, DOB, email, profile_image, department_id, date_hired) "
+			String sql = "INSERT INTO employees (employee_id, first_name, last_name, address, work_type_id, rate, grossPay, netPay, gender, tel_number, DOB, email, profile_image, department_id, date_hired) "
 					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			PreparedStatement statement = connection.prepareStatement(sql);
 
-			int newId = getLastEmployeeId() + 1;
 			statement.setInt(1, newId);
 			statement.setString(2, first_name);
 			statement.setString(3, last_name);
@@ -347,14 +366,15 @@ public class EmployeeDatabase {
 		}
 	}
 
-	public void insertEMPCredentials(String name, String username, String passw, String role) {
+	public void insertEMPCredentials(int employee_ID, String name, String username, String passw, String role) {
 		try {
 			PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO users (name, username, password, role) VALUES (?,?,?,?)");
-			statement.setString(1, name);
-			statement.setString(2, username);
-			statement.setString(3, passw);
-			statement.setString(4, role);
+					.prepareStatement("INSERT INTO users (employee_ID, name, username, password, role) VALUES (?,?,?,?,?)");
+			statement.setInt(1, employee_ID);
+			statement.setString(2, name);
+			statement.setString(3, username);
+			statement.setString(4, passw);
+			statement.setString(5, role);
 
 			statement.executeUpdate();
 		} catch (SQLException e) {
@@ -501,37 +521,37 @@ public class EmployeeDatabase {
 	}
 
 	// attendance DB methods
-	   /**
-     * Checks whether an employee has checked in on a specific date.
-     * 
-     * @param employeeId The ID of the employee.
-     * @param employeeName The name of the employee.
-     * @param date The date to check in YYYY-MM-DD format.
-     * @return true if the employee has checked in on the given date, false otherwise.
-     */
-    public boolean hasCheckedIn(int employeeId, String employeeName, String date) {
-        // Query to check if an employee has checked in on a specific date
-        String query = "SELECT COUNT(*) AS count FROM attendance WHERE employee_id = ? AND name = ? AND date = ?";
-        
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setInt(1, employeeId);
-            stmt.setString(2, employeeName);
-            stmt.setString(3, date);
+	/**
+	 * Checks whether an employee has checked in on a specific date.
+	 * 
+	 * @param employeeId   The ID of the employee.
+	 * @param employeeName The name of the employee.
+	 * @param date         The date to check in YYYY-MM-DD format.
+	 * @return true if the employee has checked in on the given date, false
+	 *         otherwise.
+	 */
+	public boolean hasCheckedIn(int employeeId, String employeeName, String date) {
+		// Query to check if an employee has checked in on a specific date
+		String query = "SELECT COUNT(*) AS count FROM attendance WHERE employee_id = ? AND name = ? AND date = ?";
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("count") > 0;  // If count is greater than 0, the employee has checked in
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Error checking employee attendance: " + e.getMessage());
-            // Optional: Rethrow the exception or handle it in a specific way
-        }
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setInt(1, employeeId);
+			stmt.setString(2, employeeName);
+			stmt.setString(3, date);
 
-        // Return false if there's an SQL exception or if the employee hasn't checked in
-        return false;
-    }
+			try (ResultSet rs = stmt.executeQuery()) {
+				if (rs.next()) {
+					return rs.getInt("count") > 0; // If count is greater than 0, the employee has checked in
+				}
+			}
+		} catch (SQLException e) {
+			System.err.println("Error checking employee attendance: " + e.getMessage());
+			// Optional: Rethrow the exception or handle it in a specific way
+		}
 
+		// Return false if there's an SQL exception or if the employee hasn't checked in
+		return false;
+	}
 
 	public void addTimeIn(int employeeId, String name, String date, Long timeIn, String note) {
 		try {

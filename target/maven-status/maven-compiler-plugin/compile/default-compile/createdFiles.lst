@@ -34,12 +34,12 @@ bluejay\admin\UpdateEMPPanel.class
 bluejay\employee\EmployeePanel$4.class
 bluejay\LoginPanel$3.class
 bluejay\ButtonPanel.class
-bluejay\employee\AttendanceForm$3.class
 bluejay\admin\EmployeeEditWindow.class
 bluejay\admin\EmployeeEditWindow$3.class
 bluejay\admin\AdminPanel$4.class
 bluejay\employee\ProfilePanel$1.class
 bluejay\employee\EmployeePanel$1.class
+bluejay\Payroll.class
 bluejay\admin\EMPListPanel$2.class
 bluejay\LoginPanel.class
 bluejayDB\EmployeeDatabase.class

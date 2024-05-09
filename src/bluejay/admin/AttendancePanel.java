@@ -27,7 +27,17 @@ public class AttendancePanel extends JPanel {
         setLayout(new MigLayout("wrap, fillx, insets 25 35 25 35", "[grow]", "[][][][grow][]"));
 
         attendanceModel = new DefaultTableModel(
-                new String[] { "Date", "Employee ID", "Name", "Work Type ","Status", "Clock In" , "Clock In Note", "Clock Out", "Clock Out Note", "Gross Pay" ,"Net Pay" }, 0);
+                new String[] { "Date", 
+                			   "ID", 
+                			   "Name", 
+                			   "Work Type",
+                			   "Status",
+                			   "Clock In", 
+                			   "Clock In Note", 
+                			   "Clock Out", 
+                			   "Clock Out Note", 
+                			   "Overtime",
+                			   "Gross Pay" }, 0);
 
         JLabel lblNewLabel = new JLabel("Attendance Monitor");
         lblNewLabel.setFont(new Font("SansSerif", Font.BOLD, 20));

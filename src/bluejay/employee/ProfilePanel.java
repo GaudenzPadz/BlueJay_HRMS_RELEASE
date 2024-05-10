@@ -56,7 +56,7 @@ public class ProfilePanel extends JPanel {
 	private EmployeeDatabase db;
 	private JTextField IDField;
 	private JTextField emailField;
-	private JTextField telNumField;
+	private JTextField contactNumField;
 	private JTextField ageField;
 	private JTextField grossPayField;
 	private Employee employee;
@@ -205,7 +205,7 @@ public class ProfilePanel extends JPanel {
 		panel.add(textField, "cell 7 14,growx");
 		textField.setColumns(10);
 
-		JLabel lblNewLabel_10 = new JLabel("Telephone Number");
+		JLabel lblNewLabel_10 = new JLabel("Contact Number");
 		panel.add(lblNewLabel_10, "cell 5 15");
 
 		JButton editProfileBtn = new JButton("Edit Profile");
@@ -224,9 +224,9 @@ public class ProfilePanel extends JPanel {
 			dialog.setVisible(true);
 		});
 
-		telNumField = new JTextField();
-		panel.add(telNumField, "cell 5 16,growx");
-		telNumField.setColumns(10);
+		contactNumField = new JTextField();
+		panel.add(contactNumField, "cell 5 16,growx");
+		contactNumField.setColumns(10);
 		panel.add(editCredentialsBtn, "cell 3 17");
 
 		// Initialize the date picker for Date of Birth
@@ -289,7 +289,7 @@ public class ProfilePanel extends JPanel {
 		workTypeField.setText(employee.getWorkType());
 		addressField.setText(employee.getAddress());
 		emailField.setText(employee.getEmail());
-		telNumField.setText(employee.getTelNumber());
+		contactNumField.setText(employee.getContactNumber());
 		genderField.setText(employee.getGender());
 		departmentField.setText(employee.getDepartment());
         int age = calculateAge( employee.getDOB());
@@ -326,7 +326,7 @@ public class ProfilePanel extends JPanel {
 				!workTypeField.getText().equals(employee.getWorkType()) ||
 				!addressField.getText().equals(employee.getAddress()) ||
 				!emailField.getText().equals(employee.getEmail()) ||
-				!telNumField.getText().equals(employee.getTelNumber()) ||
+				!contactNumField.getText().equals(employee.getContactNumber()) ||
 				!DOBField.getModel().getValue().equals(employee.getDOB());
 	}
 
@@ -349,7 +349,7 @@ public class ProfilePanel extends JPanel {
 		workTypeField.setEditable(isEditable);
 		addressField.setEditable(isEditable);
 		emailField.setEditable(isEditable);
-		telNumField.setEditable(isEditable);
+		contactNumField.setEditable(isEditable);
 		DOBField.getJFormattedTextField().setEditable(false);
 
 	}
@@ -362,7 +362,7 @@ public class ProfilePanel extends JPanel {
 		employee.setWorkType(workTypeField.getText());
 		employee.setAddress(addressField.getText());
 		employee.setEmail(emailField.getText());
-		employee.setTelNUmber(telNumField.getText());
+		employee.setContactNumber(contactNumField.getText());
 		// Retrieve the date from the date picker
 		Date selectedDate = (Date) DOBField.getModel().getValue();
 		java.sql.Date DOB = null;

@@ -77,7 +77,6 @@ public class EmployeeDatabase {
 		return statement.executeQuery();
 	}
 
-	
 	public Employee getEmployeeDataByUsername(String username) {
 		try {
 			String sql = "SELECT e.*, t.work_type, d.department_name AS department FROM employees e "
@@ -101,7 +100,7 @@ public class EmployeeDatabase {
 				employee.setGrossPay(rs.getDouble("grossPay"));
 				employee.setNetPay(rs.getDouble("netPay"));
 				employee.setGender(rs.getString("gender"));
-				employee.setTelNUmber(rs.getString("tel_number"));
+				employee.setContactNumber(rs.getString("tel_number"));
 				employee.setEmail(rs.getString("email"));
 				byte[] imageData = rs.getBytes("profile_image");
 				if (imageData != null) {
@@ -152,7 +151,7 @@ public class EmployeeDatabase {
 				employee.setGrossPay(rs.getDouble("grossPay"));
 				employee.setNetPay(rs.getDouble("netPay"));
 				employee.setGender(rs.getString("gender"));
-				employee.setTelNUmber(rs.getString("tel_number"));
+				employee.setContactNumber(rs.getString("tel_number"));
 				employee.setEmail(rs.getString("email"));
 				byte[] imageData = rs.getBytes("profile_image");
 				if (imageData != null) {
@@ -279,6 +278,21 @@ public class EmployeeDatabase {
 		return -1; // Return -1 if not found
 	}
 
+	public int getEmploymentTypeId(String employmentTypeName) {
+		String query = "SELECT employment_type_id FROM employment_type WHERE employment_type = ?";
+		try {
+			PreparedStatement ps = connection.prepareStatement(query);
+			ps.setString(1, employmentTypeName);
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				return rs.getInt("employment_type_id"); // Return the found department_id
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return -1; // Return -1 if not found
+	}
+
 	public int getWorkTypeId(String workTypeName) {
 		String query = "SELECT id FROM types WHERE work_type = ?";
 		try (PreparedStatement ps = connection.prepareStatement(query)) {
@@ -306,6 +320,7 @@ public class EmployeeDatabase {
 		}
 
 	}
+
 	public ResultSet getEmploymentTypes() {
 		try {
 			PreparedStatement statement = connection.prepareStatement("SELECT * FROM employment_type");
@@ -328,13 +343,15 @@ public class EmployeeDatabase {
 
 	}
 
-	public void insertEMPData(int newId, String first_name, String last_name, String address, int workTypeId, double rate,
+	public void insertEMPData(int newId, String first_name, String last_name, String address, int workTypeId,
+			double rate,
 			String gender, String telNum, java.sql.Date DOB, String email, byte[] imageData, int departmentId,
+			int employmentTypeId,
 			java.sql.Date date_hired, double grossPay, double netPay) {
 
 		try {
-			String sql = "INSERT INTO employees (employee_id, first_name, last_name, address, work_type_id, rate, grossPay, netPay, gender, tel_number, DOB, email, profile_image, department_id, date_hired) "
-					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+			String sql = "INSERT INTO employees (employee_id, first_name, last_name, address, work_type_id, rate, grossPay, netPay, gender, tel_number, DOB, email, profile_image, department_id, employment_type_id, date_hired) "
+					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			PreparedStatement statement = connection.prepareStatement(sql);
 
 			statement.setInt(1, newId);
@@ -354,10 +371,11 @@ public class EmployeeDatabase {
 			statement.setString(12, email);
 			statement.setBytes(13, imageData);
 			statement.setInt(14, departmentId);
+			statement.setInt(15, employmentTypeId);
 
 			long unixDate_hired = date_hired.toLocalDate().atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()
 					.getEpochSecond();
-			statement.setLong(15, unixDate_hired);
+			statement.setLong(16, unixDate_hired);
 
 			statement.executeUpdate();
 			System.out.println("Record created.");
@@ -369,7 +387,8 @@ public class EmployeeDatabase {
 	public void insertEMPCredentials(int employee_ID, String name, String username, String passw, String role) {
 		try {
 			PreparedStatement statement = connection
-					.prepareStatement("INSERT INTO users (employee_ID, name, username, password, role) VALUES (?,?,?,?,?)");
+					.prepareStatement(
+							"INSERT INTO users (employee_ID, name, username, password, role) VALUES (?,?,?,?,?)");
 			statement.setInt(1, employee_ID);
 			statement.setString(2, name);
 			statement.setString(3, username);
@@ -429,13 +448,16 @@ public class EmployeeDatabase {
 	}
 
 	public Employee getEmployeeById(int id) throws SQLException {
-		String sql = "SELECT e.*, d.department_name, t.work_type " + "FROM employees e "
-				+ "LEFT JOIN department d ON e.department_id = d.department_id "
-				+ "LEFT JOIN types t ON e.work_type_id = t.id " + "WHERE e.id = ?";
+		String sql = "SELECT e.*, d.department_name, t.work_type, et.type as employment_type "
+				   + "FROM employees e "
+				   + "LEFT JOIN department d ON e.department_id = d.department_id "
+				   + "LEFT JOIN types t ON e.work_type_id = t.id "
+				   + "LEFT JOIN employment_type et ON e.employment_type_id = et.id "
+				   + "WHERE e.id = ?";
 		PreparedStatement statement = connection.prepareStatement(sql);
 		statement.setInt(1, id);
 		ResultSet rs = statement.executeQuery();
-
+	
 		if (rs.next()) {
 			Employee employee = new Employee();
 			employee.setId(rs.getInt("id"));
@@ -445,19 +467,20 @@ public class EmployeeDatabase {
 			employee.setAddress(rs.getString("address"));
 			employee.setDepartment(rs.getString("department_name")); // Fetching department name from joined table
 			employee.setWorkType(rs.getString("work_type")); // Fetching work type from joined table
+			employee.setEmploymentType(rs.getString("employment_type")); // Fetching employment type from joined table
 			employee.setBasicSalary(rs.getDouble("rate"));
 			employee.setGrossPay(rs.getDouble("grossPay"));
 			employee.setNetPay(rs.getDouble("netPay")); // Assuming netPay is stored as a numeric type
 			employee.setGender(rs.getString("gender"));
-			employee.setTelNUmber(rs.getString("tel_number"));
+			employee.setContactNumber(rs.getString("tel_number"));
 			employee.setEmail(rs.getString("email"));
 			// converts unix timestamp into a java.sql.Date
 			employee.setDateHired(Date.valueOf(Instant.ofEpochSecond(rs.getLong("date_hired"))
 					.atZone(ZoneId.systemDefault()).toLocalDateTime().toLocalDate()));
-
+	
 			employee.setDOB(Date.valueOf(Instant.ofEpochSecond(rs.getLong("DOB")).atZone(ZoneId.systemDefault())
 					.toLocalDateTime().toLocalDate()));
-
+	
 			byte[] imageData = rs.getBytes("profile_image");
 			if (imageData != null) {
 				employee.setProfileImage(imageData);
@@ -469,23 +492,25 @@ public class EmployeeDatabase {
 	}
 
 	public synchronized void updateEmployee(Employee employee) {
-		String sql = "UPDATE employees SET " + "first_name = ?," // 1
-				+ " middle_name = ?, " // 2
-				+ "last_name = ?, " // 3
-				+ "address = ?, " // 4
-				+ "department_id = ?, " // 5
-				+ "work_type_id = ?, " // 6
-				+ "rate = ?, " // 7
-				+ "grossPay = ?, " // 8
-				+ "netPay = ?, " // 9
-				+ "gender = ?, " // 10
-				+ "tel_number = ?, " // 11
-				+ "email = ?, " // 12
-				+ "profile_image = ?, " // 13
-				+ "date_hired = ?, " // 14
-				+ "DOB = ? " // 15
-				+ "WHERE id = ?"; // 16
-
+		String sql = "UPDATE employees SET "
+				   + "first_name = ?, " // 1
+				   + "middle_name = ?, " // 2
+				   + "last_name = ?, " // 3
+				   + "address = ?, " // 4
+				   + "department_id = ?, " // 5
+				   + "work_type_id = ?, " // 6
+				   + "employment_type_id = ?, " // 7
+				   + "rate = ?, " // 8
+				   + "grossPay = ?, " // 9
+				   + "netPay = ?, " // 10
+				   + "gender = ?, " // 11
+				   + "tel_number = ?, " // 12
+				   + "email = ?, " // 13
+				   + "profile_image = ?, " // 14
+				   + "date_hired = ?, " // 15
+				   + "DOB = ? " // 16
+				   + "WHERE id = ?"; // 17
+	
 		try (PreparedStatement statement = connection.prepareStatement(sql)) {
 			statement.setString(1, employee.getFirstName());
 			statement.setString(2, employee.getMiddleName());
@@ -493,25 +518,26 @@ public class EmployeeDatabase {
 			statement.setString(4, employee.getAddress());
 			statement.setInt(5, getDepartmentId(employee.getDepartment()));
 			statement.setInt(6, getWorkTypeId(employee.getWorkType()));
-			statement.setDouble(7, employee.getBasicSalary());
-			statement.setDouble(8, employee.getGrossPay());
-			statement.setDouble(9, employee.getNetPay());
-			statement.setString(10, employee.getGender());
-			statement.setString(11, employee.getTelNumber());
-			statement.setString(12, employee.getEmail());
+			statement.setInt(7, getEmploymentTypeId(employee.getEmploymentType())); // Get employment type ID
+			statement.setDouble(8, employee.getBasicSalary());
+			statement.setDouble(9, employee.getGrossPay());
+			statement.setDouble(10, employee.getNetPay());
+			statement.setString(11, employee.getGender());
+			statement.setString(12, employee.getContactNumber());
+			statement.setString(13, employee.getEmail());
 			if (employee.getProfileImage() != null) {
-				statement.setBytes(13, employee.getProfileImageBytes());
+				statement.setBytes(14, employee.getProfileImageBytes());
 			} else {
-				statement.setNull(13, java.sql.Types.BLOB);
+				statement.setNull(14, java.sql.Types.BLOB);
 			}
-
-			statement.setLong(14, employee.getDateHired().toLocalDate().atStartOfDay().atZone(ZoneId.systemDefault())
+	
+			statement.setLong(15, employee.getDateHired().toLocalDate().atStartOfDay().atZone(ZoneId.systemDefault())
 					.toInstant().getEpochSecond());
-
-			statement.setLong(15, employee.getDOB().toLocalDate().atStartOfDay().atZone(ZoneId.systemDefault())
+	
+			statement.setLong(16, employee.getDOB().toLocalDate().atStartOfDay().atZone(ZoneId.systemDefault())
 					.toInstant().getEpochSecond());
-
-			statement.setInt(16, employee.getId());
+	
+			statement.setInt(17, employee.getId());
 			statement.executeUpdate();
 			System.out.println("Record updated.");
 		} catch (SQLException e) {

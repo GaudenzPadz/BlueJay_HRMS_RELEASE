@@ -307,7 +307,7 @@ public class AddEMPPanel extends JPanel {
 		panel.add(separator, "cell 0 27,growx");
 
 		btnNewButton = new JButton("Add Employee");
-		btnNewButton.addActionListener(this::addButtonClicked);
+		btnNewButton.addActionListener((ActionEvent e) -> saveEmployeeToDatabase() );
 		panel.add(btnNewButton, "cell 0 28");
 
 		textField_4 = new JTextField();
@@ -555,116 +555,78 @@ public class AddEMPPanel extends JPanel {
 		}
 	}
 
-	private void addButtonClicked(ActionEvent e) {
+	private void saveEmployeeToDatabase() {
 		// Retrieve text from fields
-
 		String firstName = fNameField.getText();
 		String lastName = lNameField.getText();
 		String address = addressField.getText();
-		String selectedDepartment = (String) departmentComboBox.getSelectedItem(); // Get selected department name
-		int departmentId = db.getDepartmentId(selectedDepartment); // Get the department ID based on the name
-
+		String selectedEmploymentType = (String) employmentTypeComboBox.getSelectedItem();
+		int employmentTypeId = db.getEmploymentTypeId(selectedEmploymentType);
+		String selectedDepartment = (String) departmentComboBox.getSelectedItem();
+		int departmentId = db.getDepartmentId(selectedDepartment);
 		String selectedWorkType = (String) workTypeCombobox.getSelectedItem();
 		int workTypeId = db.getWorkTypeId(selectedWorkType);
-
 		String gender = radioMale.isSelected() ? "Male" : "Female";
 		String telNum = contactField.getText();
 		String email = emailField.getText();
 		String username = usernameField.getText();
 		String password = new String(passwordField.getPassword());
-
-		// Retrieve the date from the date picker
 		Date selectedDate = (Date) DOBField.getModel().getValue();
 		java.sql.Date DOB = null;
 		if (selectedDate != null) {
 			DOB = new java.sql.Date(selectedDate.getTime());
 		}
-
+	
 		// Ensure the date is not null before proceeding
 		if (DOB == null) {
 			JOptionPane.showMessageDialog(null, "Please select a valid date.", "Error", JOptionPane.ERROR_MESSAGE);
 			return;
 		}
+	
 		// Ensure required fields are filled
 		if (!validateAndHighlight()) {
-			JOptionPane.showMessageDialog(null, "Please correct the highlighted fields.", "Error",
-					JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(null, "Please correct the highlighted fields.", "Error", JOptionPane.ERROR_MESSAGE);
 			return; // Exit early if validation fails
 		}
-
+	
 		try {
 			byte[] imageData = fileToByteArray(selectedFile);
 			double wage = Double.valueOf(wageField.getText());
-			// Get the current date using LocalDate
 			LocalDate localDate = LocalDate.now();
-
-			// Convert LocalDate to java.sql.Date
 			Date dateToday = Date.valueOf(localDate);
-			double grossPay = 0;
-			double netPay = 0;
-			db.insertEMPData(newId, firstName, lastName, address, workTypeId, wage, gender, telNum, DOB, email,
-					imageData, departmentId, dateToday, grossPay, netPay);
-
+			double grossPay = 0; // This might need to be calculated based on other data
+			double netPay = 0; // This might need to be calculated based on other data
+	
+			// Insert data into the employees table
+			db.insertEMPData(newId, firstName, lastName, address,
+			 workTypeId, wage, gender, telNum, DOB, email, imageData, 
+			 departmentId, employmentTypeId, dateToday, grossPay, netPay);
+	
+			// Optionally insert data into the users table if the employee needs login credentials
 			db.insertEMPCredentials(newId, firstName + " " + lastName, username, password, "Employee");
-
-			JOptionPane.showMessageDialog(null, "Employee added successfully.", "Success",
-					JOptionPane.INFORMATION_MESSAGE);
-
+	
+			JOptionPane.showMessageDialog(null, "Employee added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+	
 			// Clear the fields after successful insertion
-			fNameField.setText("");
-			lNameField.setText("");
-			addressField.setText("");
-			contactField.setText("");
-			emailField.setText("");
-			DOBField.getModel().setValue(null); // Reset the model value
-			workTypeCombobox.setSelectedItem(null);
-			usernameField.setText("");
-			passwordField.setText("");
-
-			// Clear the image from the profile panel
-			imageLabel.setIcon(null); // Remove the image
-			selectedFile = null; // Reset the selected file to indicate no image
-
+			clearFormFields();
+	
 		} catch (Exception ex) {
-			JOptionPane.showMessageDialog(null, "An error occurred while adding the employee. Please try again.",
-					"Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(null, "An error occurred while adding the employee. Please try again.", "Error", JOptionPane.ERROR_MESSAGE);
 			ex.printStackTrace();
 		}
 	}
-
-	private void addEmployeeFromCSV(File csvFile) {
-		try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
-			String line;
-			while ((line = br.readLine()) != null) {
-				String[] data = line.split(","); // Assuming CSV format is comma-separated
-				fNameField.setText(data[0]);
-				lNameField.setText(data[1]);
-				addressField.setText(data[2]);
-				departmentComboBox.setSelectedItem(data[3]);
-				workTypeCombobox.setSelectedItem(data[4]);
-				wageField.setText(data[5]);
-				if ("Male".equals(data[6])) {
-					radioMale.setSelected(true);
-				} else {
-					radioFemale.setSelected(true);
-				}
-				contactField.setText(data[7]);
-				emailField.setText(data[8]);
-				usernameField.setText(data[9]);
-				passwordField.setText(data[10]);
-				String dob = data[11]; // Date of Birth in format yyyy-MM-dd
-				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-				// Convert java.sql.Date to java.util.Date before setting it in the
-				// JDatePickerImpl
-				Date dobDate = new Date(sdf.parse(dob).getTime());
-				DOBField.getModel().setDate(dobDate.toLocalDate().getYear(), dobDate.toLocalDate().getMonthValue() - 1,
-						dobDate.toLocalDate().getDayOfMonth());
-				// Additional processing and validation can be added here
-			}
-		} catch (IOException | ParseException ex) {
-			ex.printStackTrace();
-			JOptionPane.showMessageDialog(null, "An error occurred while adding employees from CSV.", "Error",
-					JOptionPane.ERROR_MESSAGE);
-		}
+	
+	private void clearFormFields() {
+		fNameField.setText("");
+		lNameField.setText("");
+		addressField.setText("");
+		contactField.setText("");
+		emailField.setText("");
+		DOBField.getModel().setValue(null);
+		workTypeCombobox.setSelectedItem(null);
+		usernameField.setText("");
+		passwordField.setText("");
+		imageLabel.setIcon(null);
+		selectedFile = null;
 	}
 }

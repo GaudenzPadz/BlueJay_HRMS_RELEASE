@@ -30,7 +30,7 @@ public class Employee {
 	private double SSS;
 	private double PAG_IBIG;
 	private double PHILHEALTH;
-	private String telNumber;
+	private String contactNumber;
 	private String email;
 	private Date dateHired;
 	private ImageIcon profileImage;
@@ -40,9 +40,10 @@ public class Employee {
 	private LocalDateTime timeIN;
 	private LocalDateTime timeOUT;
 	private String created_at;
+	private String EmploymentType;
 
 	public Employee(int id, String firstName, String middleName, String lastName, String address, String department,
-			String workType, double basicSalary, double ratePerDay, double grossPay, double netPay, String gender) {
+			String EmploymentType, String workType, double basicSalary, double ratePerDay, double grossPay, double netPay, String gender) {
 		// Initialize
 		this.id = id;
 		this.firstName = firstName;
@@ -50,6 +51,7 @@ public class Employee {
 		this.lastName = lastName;
 		this.address = address;
 		this.department = department;
+		this.EmploymentType = EmploymentType;
 		this.workType = workType;
 		this.basicSalary = basicSalary;
 		this.ratePerDay = ratePerDay;
@@ -149,8 +151,8 @@ public class Employee {
 		return absents;
 	}
 
-	public String getTelNumber() {
-		return telNumber;
+	public String getContactNumber() {
+		return contactNumber;
 	}
 
 	public int getLate() {
@@ -284,8 +286,8 @@ public class Employee {
 		this.overtime = overtime;
 	}
 
-	public void setTelNUmber(String telNumber) {
-		this.telNumber = telNumber;
+	public void setContactNumber(String contactNumber) {
+		this.contactNumber = contactNumber;
 	}
 
 	public void setEmail(String email) {
@@ -367,5 +369,15 @@ public class Employee {
 	{
 		return created_at;
 	}
+
+    public String getEmploymentType() {
+
+		return EmploymentType;
+    }
+
+	public void setEmploymentType(String EmploymentType) {
+		this.EmploymentType = EmploymentType;
+	}
 	
 }
+

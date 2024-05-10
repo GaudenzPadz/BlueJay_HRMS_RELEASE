@@ -42,7 +42,7 @@ class EmployeeEditWindow extends JDialog {
 	private JTextField wageField;
 	private JTextField grossPayField;
 	private JTextField netPayField;
-	private JTextField telNumberField;
+	private JTextField contactNumberField;
 	private JTextField emailField;
 	private JTextField otherWorkTypeField;
 	private JDatePickerImpl DOBField;
@@ -85,7 +85,7 @@ class EmployeeEditWindow extends JDialog {
 		wageField = new JTextField();
 		grossPayField = new JTextField();
 		netPayField = new JTextField();
-		telNumberField = new JTextField();
+		contactNumberField = new JTextField();
 		emailField = new JTextField();
 		otherWorkTypeField = new JTextField();
 		otherWorkTypeField.setEnabled(false);
@@ -147,7 +147,7 @@ class EmployeeEditWindow extends JDialog {
 		mNameField.setText(employee.getMiddleName());
 		lNameField.setText(employee.getLastName());
 		addressField.setText(employee.getAddress());
-		telNumberField.setText(employee.getTelNumber());
+		contactNumberField.setText(employee.getContactNumber());
 		emailField.setText(employee.getEmail());
 
 		if ("Male".equals(employee.getGender())) {
@@ -179,7 +179,8 @@ class EmployeeEditWindow extends JDialog {
 
 	private void setupLayout() {
 		// Add components to the panel in a structured way
-		panel = new JPanel(new MigLayout("wrap, fillx, insets 35 45 30 45", "[180px,grow][100px][fill][grow,fill]", "[][][][][][][][][][][][][][][][][]"));
+		panel = new JPanel(new MigLayout("wrap, fillx, insets 35 45 30 45", "[180px,grow][100px][fill][grow,fill]",
+				"[][][][][][][][][][][][][][][][][]"));
 		getContentPane().add(panel, "alignx left,growy");
 		// Gender panel
 		JPanel genderPanel = new JPanel(new MigLayout("insets 0"));
@@ -201,8 +202,8 @@ class EmployeeEditWindow extends JDialog {
 		panel.add(new JLabel("Address"), "cell 2 3,alignx left");
 		panel.add(addressField, "cell 3 3");
 
-		panel.add(new JLabel("Telephone"), "cell 2 4,alignx left");
-		panel.add(telNumberField, "cell 3 4");
+		panel.add(new JLabel("Contact Number"), "cell 2 4,alignx left");
+		panel.add(contactNumberField, "cell 3 4");
 		replaceProfile = new JButton("Replace Picture");
 
 		panel.add(replaceProfile, "cell 0 5,growx");
@@ -385,7 +386,8 @@ class EmployeeEditWindow extends JDialog {
 
 			// If crucial fields are validated, check non-essential fields
 			// Ask user if they want to set empty non-crucial fields to default values
-			if (addressField.getText().isEmpty() || telNumberField.getText().isEmpty() || emailField.getText().isEmpty()
+			if (addressField.getText().isEmpty() || contactNumberField.getText().isEmpty()
+					|| emailField.getText().isEmpty()
 					|| grossPayField.getText().isEmpty() || netPayField.getText().isEmpty()) {
 
 				int response = JOptionPane.showConfirmDialog(null,
@@ -395,8 +397,8 @@ class EmployeeEditWindow extends JDialog {
 				if (response == JOptionPane.YES_OPTION) {
 					if (addressField.getText().isEmpty())
 						addressField.setText("");
-					if (telNumberField.getText().isEmpty())
-						telNumberField.setText("");
+					if (contactNumberField.getText().isEmpty())
+						contactNumberField.setText("");
 					if (emailField.getText().isEmpty())
 						emailField.setText("");
 					if (grossPayField.getText().isEmpty())
@@ -423,7 +425,7 @@ class EmployeeEditWindow extends JDialog {
 			employee.setGrossPay(Double.parseDouble(grossPayField.getText()));
 			employee.setNetPay(Double.parseDouble(netPayField.getText()));
 			employee.setGender(radioMale.isSelected() ? "Male" : "Female");
-			employee.setTelNUmber(telNumberField.getText());
+			employee.setContactNumber(contactNumberField.getText());
 			employee.setEmail(emailField.getText());
 
 			// Handle DOB

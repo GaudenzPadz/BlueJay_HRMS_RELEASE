@@ -164,7 +164,7 @@ public class PayrollPanel extends JPanel implements Printable {
 				"[grow,center][100px,grow][100px,grow][50px][100px,grow][100px,grow][50px][100px,grow][100px,grow][50px][grow,center]",
 				"[center][][][][][][][grow][grow][][grow][][grow][][100px,grow][center]"));
 
-		btnCalculate.addActionListener(e -> calculatePayroll());
+//		btnCalculate.addActionListener(e -> calculatePayroll());
 
 		JLabel lblPayrollCalculator = new JLabel("Payroll Calculator");
 		lblPayrollCalculator.setFont(new Font("SansSerif", Font.BOLD, 20));
@@ -280,11 +280,14 @@ public class PayrollPanel extends JPanel implements Printable {
 
 		// based on the selected employee at employee list table
 		if (selectedEmployee == null) {
-			salaryPane.add(new JLabel("Select an employee from the list."), "wrap");
+			salaryPane.add(new JLabel("Select an employee from the list."), BorderLayout.CENTER);
 			return salaryPane;
 		}
 
+		salaryPane.add(partTimePane(), BorderLayout.CENTER);
+
 		String employmentType = selectedEmployee.getEmploymentType();
+		
 		switch (employmentType) {
 		case "Part Time":
 			salaryPane.removeAll();

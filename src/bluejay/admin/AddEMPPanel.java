@@ -5,10 +5,8 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.sql.Date;
 import java.sql.ResultSet;
@@ -113,38 +111,23 @@ public class AddEMPPanel extends JPanel {
 
 		// Initialize work type to wage mapping
 		workTypeWageMap = new HashMap<>();
-		populateWorkTypeWageMap(); // Load data from the database into the map
 		employmentTypeComboBox = new JComboBox<>();
 
 		workTypeCombobox = new JComboBox<>();
-		wageField = new JTextField();
-		wageField.setEditable(false); // Set as non-editable
+		wageField = new JTextField(10);
+		wageField.setEnabled(false);
+		wageField.setEditable(true);
+		populateWorkTypeWageMap();
 
 		// Add work types to the combobox
 		for (String workType : workTypeWageMap.keySet()) {
 			workTypeCombobox.addItem(workType);
 		}
 
-		// ActionListener to update the wage field when the work type is selected
-		workTypeCombobox.addActionListener((ActionEvent e) -> {
-			updateWageField(); // Call the method to update the wage
-		});
-
-		// Adding a new item for "Other"
-		workTypeCombobox.addItem("Other");
-		workTypeCombobox.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Work Type");
-
-		// Add ActionListener to JComboBox
-		workTypeCombobox.addActionListener((ActionEvent e) -> {
-			if ("Other".equals(workTypeCombobox.getSelectedItem())) {
-				workTypeField.setEnabled(true); // Enable the JTextField for custom input
-			} else {
-				workTypeField.setEnabled(false); // Disable if "Other" is not selected
-			}
-		});
+		departmentComboBox = new JComboBox<String>();
 
 		workTypeField = new JTextField(6);
-		workTypeField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Work Type");
+		workTypeField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter Work Type");
 		workTypeField.setEnabled(false);
 		JLabel label = new JLabel("Address");
 		addressField = new JTextField();
@@ -196,21 +179,57 @@ public class AddEMPPanel extends JPanel {
 
 		panel.add(new JLabel("Department"), "cell 0 3");
 
-		departmentComboBox = new JComboBox<String>();
-		populateDepartmentComboBox(); // Populate the JComboBox with department data
+
 		employmentTypeComboBox.setEnabled(false); // Disable Employment Type comboBox
+		workTypeCombobox.setEnabled(false); // Disable Work Type comboBox
+		workTypeField.setEnabled(false); // Disable Work Type field
+		populateDepartmentComboBox(); // Populate the JComboBox with department data
 
 		departmentComboBox.addActionListener((ActionEvent e) -> {
 			String selectedDepartment = (String) departmentComboBox.getSelectedItem();
-
-			if (selectedDepartment != null && !selectedDepartment.equals("Select Department")) {
-				int departmentId = db.getDepartmentId(selectedDepartment);
-				updateWorkTypeComboBox(departmentId); // Populate based on department
-				employmentTypeComboBox.setEnabled(true); // Enable Employment Type comboBox
-				populateEmploymentTypeComboBox(); // Populate Employment Type comboBox
+			if (selectedDepartment != null) {
+				if (!selectedDepartment.equals("Select Department")) {
+					int departmentId = db.getDepartmentId(selectedDepartment);
+					updateWorkTypeComboBox(departmentId); // Populate based on department
+					employmentTypeComboBox.setEnabled(true); // Enable Employment Type comboBox
+					workTypeCombobox.setEnabled(true); // Enable Work Type comboBox
+					workTypeField.setEnabled(false); // Disable Work Type field
+					wageField.setEnabled(false); // disable Wage field
+					populateEmploymentTypeComboBox();
+				} else {
+					employmentTypeComboBox.setEnabled(false); // Disable Employment Type comboBox
+					workTypeCombobox.setEnabled(false); // Disable Work Type comboBox
+					wageField.setEnabled(false); // Disable Wage field
+					workTypeField.setEnabled(false); // Disable Work Type field
+					employmentTypeComboBox.removeAllItems();
+				}
 			}
 		});
 
+		// ActionListener to update the wage field when the work type is selected
+		workTypeCombobox.addActionListener((ActionEvent e) -> {
+			updateWageField(); // Call the method to update the wage
+		});
+
+		// Adding a new item for "Other"
+		workTypeCombobox.addItem("Other");
+		workTypeCombobox.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Work Type");
+
+		// Add ActionListener to JComboBox
+		workTypeCombobox.addActionListener((ActionEvent e) -> {
+			if ("Other".equals(workTypeCombobox.getSelectedItem())) {
+				workTypeField.setEnabled(true); // Enable the JTextField for custom input
+				wageField.setEnabled(true); // Enable Wage field
+				wageField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter Wage");
+workTypeCombobox.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Work Type");
+
+			} else {
+				wageField.setEnabled(true); // Disable Wage field
+				workTypeField.setEnabled(false); // Disable Work Type field
+
+			}
+		});
+		
 		panel.add(departmentComboBox, "cell 0 4,growx");
 
 		lblNewLabel_8 = new JLabel("Employment Type");
@@ -226,9 +245,8 @@ public class AddEMPPanel extends JPanel {
 		lblRate = new JLabel("Wage");
 		panel.add(lblRate, "cell 0 9");
 
-		wageField = new JTextField();
+
 		panel.add(wageField, "cell 0 10,growx");
-		wageField.setColumns(10);
 
 		panel.add(label, "cell 0 11");
 
@@ -281,10 +299,8 @@ public class AddEMPPanel extends JPanel {
 			}
 		};
 		DOBField = new JDatePickerImpl(datePanel, DateLabelFormatter);
-		panel.add(DOBField, "cell 0 19,growx");
-
-		panel.add(DOBField, "cell 0 19,growx");
-
+		panel.add(DOBField, "cell 0 21,growx");
+		
 		panel.add(new JSeparator(), "cell 0 22,gapy 5 5");
 
 		JLabel lblNewLabel = new JLabel("Username");
@@ -307,7 +323,9 @@ public class AddEMPPanel extends JPanel {
 		panel.add(separator, "cell 0 27,growx");
 
 		btnNewButton = new JButton("Add Employee");
-		btnNewButton.addActionListener((ActionEvent e) -> saveEmployeeToDatabase() );
+		btnNewButton.addActionListener((ActionEvent e) -> {
+			saveEmployeeToDatabase();
+		});
 		panel.add(btnNewButton, "cell 0 28");
 
 		textField_4 = new JTextField();
@@ -320,32 +338,18 @@ public class AddEMPPanel extends JPanel {
 			JOptionPane.showMessageDialog(null, "An error occurred while retrieving employee ID.");
 		}
 
-		textField_4.setEditable(false);
+		textField_4.setEditable(true);
 		panel.add(textField_4, "cell 0 13");
 		textField_4.setColumns(10);
 
-		// // Add an import CSV button below the existing Add Employee button
-		// JButton importCSVButton = new JButton("Import CSV");
-		// importCSVButton.addActionListener((ActionEvent e) -> {
-		// JFileChooser fileChooser = new JFileChooser();
-		// FileNameExtensionFilter filter = new FileNameExtensionFilter("CSV Files",
-		// "csv");
-		// fileChooser.setFileFilter(filter);
-
-		// int result = fileChooser.showOpenDialog(null);
-
-		// if (result == JFileChooser.APPROVE_OPTION) {
-		// File selectedFile = fileChooser.getSelectedFile();
-		// addEmployeeFromCSV(selectedFile);
-		// }
-		// });
-		// panel.add(importCSVButton, "cell 0 27");
 	}
 
 	private void populateDepartmentComboBox() {
 		try {
 			ResultSet rs = db.getDepartments(); // Fetch department data
 			departmentComboBox.removeAllItems(); // Clear existing items
+			departmentComboBox.addItem("Select Department");
+
 			while (rs.next()) {
 				String departmentName = rs.getString("department_name");
 				departmentComboBox.addItem(departmentName); // Add to JComboBox
@@ -461,47 +465,48 @@ public class AddEMPPanel extends JPanel {
 	}
 
 	private boolean validateAndHighlight() {
-		boolean[] isValid = { true }; // Use an array to hold the boolean
+		boolean[] isValid = { true }; // Start assuming all data is valid
 		Color errorColor = Color.RED;
-		Border errorBorder = BorderFactory.createLineBorder(errorColor);
+		Border errorBorder = BorderFactory.createLineBorder(errorColor, 2);
 
-		BiConsumer<JTextField, String> validateTextField = (field, content) -> {
-			if (content.trim().isEmpty()) {
+		// Helper function to validate and apply styles
+		BiConsumer<JTextField, Boolean> validateField = (field, condition) -> {
+			if (!condition) {
 				field.setBorder(errorBorder);
-				System.out.println("Validation failed for: " + field.getName() + ", Content: " + content);
-				isValid[0] = false; // Modify the array element
+				isValid[0] = false; // Set isValid to false if any condition fails
 			} else {
 				field.setBorder(UIManager.getBorder("TextField.border"));
 			}
 		};
 
-		validateTextField.accept(fNameField, fNameField.getText());
-		validateTextField.accept(lNameField, lNameField.getText());
-		validateTextField.accept(addressField, addressField.getText());
-		validateTextField.accept(emailField, emailField.getText());
-		validateTextField.accept(contactField, contactField.getText());
-		validateTextField.accept(usernameField, usernameField.getText());
+		// Validate each field with specific conditions
+		validateField.accept(fNameField, !fNameField.getText().trim().isEmpty());
+		validateField.accept(lNameField, !lNameField.getText().trim().isEmpty());
+		validateField.accept(addressField, !addressField.getText().trim().isEmpty());
+		validateField.accept(emailField, emailField.getText().contains("@") && emailField.getText().contains("."));
+		validateField.accept(contactField, isValidPhoneNumber(contactField.getText()));
+		validateField.accept(usernameField, !usernameField.getText().trim().isEmpty());
+		validateField.accept(workTypeField,
+				!"Other".equals(workTypeCombobox.getSelectedItem()) || !workTypeField.getText().trim().isEmpty());
 
-		if (!isValidPhoneNumber(contactField.getText())) {
-			contactField.setBorder(errorBorder);
-			System.out.println("Invalid phone number: " + contactField.getText());
-			isValid[0] = false;
-		}
+		// Validate password field separately as it uses JPasswordField
+		String password = new String(passwordField.getPassword());
+		validateField.accept(passwordField, !password.trim().isEmpty());
 
+		// Validate the date of birth using the custom method
 		if (!isValidDate(DOBField.getJFormattedTextField().getText())) {
-			DOBField.setBorder(errorBorder);
-			System.out.println("Invalid date: " + DOBField.getJFormattedTextField().getText());
+			DOBField.getJFormattedTextField().setBorder(errorBorder);
 			isValid[0] = false;
+		} else {
+			DOBField.getJFormattedTextField().setBorder(UIManager.getBorder("TextField.border"));
 		}
 
+		// Validate the image file
 		if (!isValidImage(selectedFile)) {
 			uploadBtn.setBorder(errorBorder);
-			System.out.println("Invalid image file.");
 			isValid[0] = false;
-		}
-
-		if ("Other".equals(workTypeCombobox.getSelectedItem())) {
-			validateTextField.accept(workTypeField, workTypeField.getText());
+		} else {
+			uploadBtn.setBorder(UIManager.getBorder("Button.border"));
 		}
 
 		return isValid[0];
@@ -554,6 +559,7 @@ public class AddEMPPanel extends JPanel {
 			return null;
 		}
 	}
+
 
 	private void saveEmployeeToDatabase() {
 		// Retrieve text from fields

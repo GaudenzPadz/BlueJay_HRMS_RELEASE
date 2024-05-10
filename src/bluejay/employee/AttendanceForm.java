@@ -9,7 +9,10 @@ import java.awt.event.ActionListener;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -41,10 +44,12 @@ public class AttendanceForm extends JPanel {
 	private static final long serialVersionUID = 1L;
 	private Employee employee;
 	JComboBox<String> AmPmCombo;
-	private String[] column = { "Name", "Date", "Status", "Time In", "Time In Note", "Time Out", "Time Out", "Overtime",
-			"Gross Pay" };
+	private String[] column = {
+			"Name", "Date", "Status", "Time In", "Time In Note", "Time Out", "Time Out Note", "Overtime",
+			"Worked Hours", "Salary of That Day" }; // add a actions button (like details) to the table
 
-	private DefaultTableModel model = new DefaultTableModel(column, 0) {
+	private DefaultTableModel attendanceModel = new DefaultTableModel(column, 0) {
+		private static final long serialVersionUID = 7292205409469675412L;
 
 		@Override
 		public boolean isCellEditable(int row, int column) {
@@ -53,7 +58,7 @@ public class AttendanceForm extends JPanel {
 		}
 	};
 
-	private JTable table;
+	private JTable attendanceTable;
 	private EmployeeDatabase db;
 	private String currentDate = LocalDate.now().toString(); // Current date as a string
 	private JSpinner INhourField;
@@ -61,19 +66,17 @@ public class AttendanceForm extends JPanel {
 	private JComboBox<String> AmPmOUTCombo;
 	private JTextArea clockINnote;
 	private JTextArea clockOUTnote;
-	private JCheckBox OTcheck;
 	private JSpinner hourOUTField;
 	private JSpinner minutesOUTField;
-	private JSpinner OTINhourField;
 	private String name;
 
 	public AttendanceForm(Employee employee, EmployeeDatabase DB) {
 		this.employee = employee;
-		 name = employee.getFirstName() + " " + employee.getLastName();
+		name = employee.getFirstName() + " " + employee.getLastName();
 		this.db = DB;
-		table = new JTable(model);
+		attendanceTable = new JTable(attendanceModel);
 
-		refreshTable(model);
+		refreshTable(attendanceModel);
 		ifClockedIN();
 
 	}
@@ -231,11 +234,11 @@ public class AttendanceForm extends JPanel {
 			System.out.println(unixTimestamp);
 			String status = "Active";
 
-			db.addTimeIn(employee.getId(), name, currentDate, unixTimestamp, noteIN);
+			db.addTimeIn(employee.getId(), name, employee.getEmploymentType(), status, currentDate, unixTimestamp, noteIN);
 			employee.setTimeIn(dateTime);
 
 			JOptionPane.showMessageDialog(this, "Time In recorded.");
-			refreshTable(model);
+			refreshTable(attendanceModel);
 			removeAll();
 			ifClockedIN();
 			revalidate();
@@ -274,72 +277,69 @@ public class AttendanceForm extends JPanel {
 		clockOUTnote.setLineWrap(true);
 		attendanceOUTForm.add(clockOUTnote, "cell 2 1 1 6,grow");
 
-		OTcheck = new JCheckBox("Overtime?");
-		attendanceOUTForm.add(OTcheck, "flowx,cell 0 3,alignx left");
-
-		JLabel howCome = new JLabel("How Many Hours? ");
-		attendanceOUTForm.add(howCome, "flowx,cell 0 4,alignx left");
-
-		OTINhourField = new JSpinner(new SpinnerNumberModel(1, 1, 12, 1));
-
-		attendanceOUTForm.add(OTINhourField, "cell 0 4,alignx right");
-		OTcheck.addActionListener(e -> {
-			boolean selected = OTcheck.isSelected();
-			howCome.setEnabled(selected);
-			OTINhourField.setEnabled(selected);
-		});
-
 		JButton OUTBtn = new JButton("Time Out");
 		OUTBtn.addActionListener(e -> handleClockOut());
 
-		OTcheck.addActionListener(e -> {
-			boolean selected = OTcheck.isSelected();
-			howCome.setEnabled(selected);
-			OTINhourField.setEnabled(selected);
-		});
 		attendanceOUTForm.add(OUTBtn, "cell 1 8,growx");
 		return attendanceOUTForm;
 	}
 
-	private void handleClockOut() {
+	private List<LocalDate> getMissingDates(LocalDate lastDate, LocalDate currentDate) {
+		List<LocalDate> missingDates = new ArrayList<>();
+		long daysBetween = ChronoUnit.DAYS.between(lastDate, currentDate);
+		for (int i = 1; i < daysBetween; i++) {
+			missingDates.add(lastDate.plusDays(i));
+		}
+		return missingDates;
+	}
 
+	private void markAbsentDays(List<LocalDate> missingDates, int employeeId, String employeeName) {
+		for (LocalDate date : missingDates) {
+			db.insertAbsentRecord(employeeId, employeeName, date.toString());
+		}
+	}
+
+	public double calculateGrossPayFrom1To15() {
+		double totalGrossPay = 0.0;
+		int dateColumnIndex = 1; // Assuming the date is in the second column
+		int grossPayColumnIndex = 9; // Assuming the grossPay is in the tenth column
+	
+		for (int i = 0; i < attendanceModel.getRowCount(); i++) {
+			String dateStr = (String) attendanceModel.getValueAt(i, dateColumnIndex);
+			LocalDate date = LocalDate.parse(dateStr);
+			if (date.getDayOfMonth() >= 1 && date.getDayOfMonth() <= 15) {
+				double grossPay = Double.parseDouble(attendanceModel.getValueAt(i, grossPayColumnIndex).toString());
+				totalGrossPay += grossPay;
+			}
+		}
+		return totalGrossPay;
+	}
+
+	private void handleClockOut() {
 		if (validateTime(hourOUTField.getValue().toString(), minutesOUTField.getValue().toString())) {
 			int hours = (Integer) hourOUTField.getValue();
 			int minutes = (Integer) minutesOUTField.getValue();
 			String ampm = (String) AmPmOUTCombo.getSelectedItem();
-
 			if (ampm.equals("PM") && hours < 12) {
 				hours += 12;
 			} else if (ampm.equals("AM") && hours == 12) {
 				hours = 0;
 			}
-
-			// Use system's default zone id
 			ZoneId zoneId = ZoneId.systemDefault();
 			LocalDateTime dateTime = LocalDate.now(zoneId).atTime(hours, minutes);
 			long unixTimestampOUT = dateTime.atZone(zoneId).toEpochSecond();
 			int overtimeHours = calculateOvertime(hours, minutes);
-			String noteOUT = clockOUTnote.getText();
-			OTcheck.setSelected(overtimeHours > 0);
-			OTINhourField.setValue(overtimeHours);
-			employee.setOvertime(overtimeHours);
-			employee.setTimeOut(dateTime);
-
-			// a method to calculate payroll based on the time in and time out
-			System.out.println("Rate Per Hour :" + employee.getRatePerHour());
-			
-			employee.setGrossPay(employee.calculateGrossPay(hours, overtimeHours) * employee.getRatePerHour());
-			
-			System.out.println(employee.getGrossPay());
-			employee.setPayrollDataCreated(currentDate);
-
-			// method to insert timeOUT at attendance database
-			db.updateTimeOut(employee.getId(), currentDate, unixTimestampOUT, noteOUT, overtimeHours, employee.getGrossPay());
-
+			db.updateTimeOut(employee.getId(), LocalDate.now().toString(), unixTimestampOUT, clockOUTnote.getText(), overtimeHours, calculateWorkedHours(employee.getTimeIN(), dateTime, overtimeHours), employee.getGrossPay());
 			JOptionPane.showMessageDialog(this, "Time Out recorded with " + overtimeHours + " hours of overtime.");
-			refreshTable(model);
+			refreshTable(attendanceModel);
 			ifClockedIN();
 		}
+	}
+
+	private int calculateWorkedHours(LocalDateTime timeIn, LocalDateTime timeOut, int overtimeHours) {
+		long duration = ChronoUnit.SECONDS.between(timeIn, timeOut);
+		int hoursBetween = (int) (duration / 3600); // Convert seconds to hours
+		return hoursBetween + overtimeHours;
 	}
 
 	private int calculateOvertime(int hours, int minutes) {
@@ -353,25 +353,37 @@ public class AttendanceForm extends JPanel {
 		return 0;
 	}
 
+	private JPanel shiftEndedPanel() {
+		JPanel panel = new JPanel(new MigLayout("wrap,fillx,insets 20", "[grow]", "[][grow]"));
+		JLabel label = new JLabel("Shift Ended. Your attendance has been recorded.");
+		label.setFont(new Font("SansSerif", Font.BOLD, 16));
+		panel.add(label, "cell 0 0,alignx center");
+	
+		// Reuse the attendance table panel
+		panel.add(attendanceTable(), "cell 0 1,grow");
+		return panel;
+	}
+
 	private JPanel attendanceTable() {
 		// create a JTable
-		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+		attendanceTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
 
-		TableColumnModel columnModel = table.getColumnModel();
+		TableColumnModel columnModel = attendanceTable.getColumnModel();
 
-		columnModel.getColumn(0).setPreferredWidth(200);// name
+		columnModel.getColumn(0).setPreferredWidth(170);// name
 		columnModel.getColumn(1).setPreferredWidth(100);// date
 		columnModel.getColumn(2).setPreferredWidth(100);// status
 		columnModel.getColumn(3).setPreferredWidth(100);// Time in
-		columnModel.getColumn(4).setPreferredWidth(200);// time in note
+		columnModel.getColumn(4).setPreferredWidth(150);// time in note
 		columnModel.getColumn(5).setPreferredWidth(100);// time out
-		columnModel.getColumn(5).setPreferredWidth(200);// time out note
-		columnModel.getColumn(5).setPreferredWidth(100);// overtime
-		columnModel.getColumn(5).setPreferredWidth(100);// gross pay
+		columnModel.getColumn(6).setPreferredWidth(150);// time out note
+		columnModel.getColumn(7).setPreferredWidth(100);// overtime
+		columnModel.getColumn(8).setPreferredWidth(150);// worked hours
+		columnModel.getColumn(9).setPreferredWidth(150);// "Salary of That Day"
 
-		table.setFont(new Font("Serif", Font.PLAIN, 18));
-		table.setRowHeight(40);
-		JScrollPane scrollPane = new JScrollPane(table);
+		attendanceTable.setFont(new Font("Serif", Font.PLAIN, 18));
+		attendanceTable.setRowHeight(40);
+		JScrollPane scrollPane = new JScrollPane(attendanceTable);
 
 		JPanel panel = new JPanel(new MigLayout("wrap,fillx,insets 25 35 25 35", "[200px,center]", "[][]"));
 

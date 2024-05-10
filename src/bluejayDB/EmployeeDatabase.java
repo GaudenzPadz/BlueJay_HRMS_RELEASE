@@ -79,11 +79,13 @@ public class EmployeeDatabase {
 
 	public Employee getEmployeeDataByUsername(String username) {
 		try {
-			String sql = "SELECT e.*, t.work_type, d.department_name AS department FROM employees e "
+			String query = "SELECT e.*, d.department_name, t.work_type, et.type as employment_type "
+					+ "FROM employees e "
 					+ "LEFT JOIN types t ON e.work_type_id = t.id "
 					+ "LEFT JOIN department d ON e.department_id = d.department_id "
+					+ "LEFT JOIN employment_type et ON e.id = et.id "
 					+ "WHERE e.employee_id = (SELECT employee_ID FROM users WHERE username = ?)";
-			PreparedStatement statement = connection.prepareStatement(sql);
+			PreparedStatement statement = connection.prepareStatement(query);
 			statement.setString(1, username);
 			ResultSet rs = statement.executeQuery();
 
@@ -94,7 +96,8 @@ public class EmployeeDatabase {
 				employee.setMiddleName(rs.getString("middle_name"));
 				employee.setLastName(rs.getString("last_name"));
 				employee.setAddress(rs.getString("address"));
-				employee.setDepartment(rs.getString("department"));
+				employee.setDepartment(rs.getString("department_name"));
+				employee.setEmploymentType(rs.getString("employment_type"));
 				employee.setWorkType(rs.getString("work_type"));
 				employee.setBasicSalary(rs.getDouble("rate"));
 				employee.setGrossPay(rs.getDouble("grossPay"));
@@ -129,10 +132,12 @@ public class EmployeeDatabase {
 
 	public List<Employee> getAllEmployees() {
 		List<Employee> employees = new ArrayList<>();
-		String sql = "SELECT e.id, e.first_name, e.middle_name, e.last_name, e.address, d.department_name AS department, "
-				+ "t.work_type, e.rate, e.grossPay, e.netPay, e.gender, e.tel_Number, e.email, e.profile_image, e.date_hired, e.DOB "
-				+ "FROM employees e " + "LEFT JOIN types t ON e.work_type_id = t.id "
-				+ "LEFT JOIN department d ON e.department_id = d.department_id";
+		String sql = "SELECT e.*, d.department_name, t.work_type, et.type as employment_type "
+				+ "FROM employees e "
+				+ "LEFT JOIN types t ON e.work_type_id = t.id "
+				+ "LEFT JOIN department d ON e.department_id = d.department_id "
+				+ "LEFT JOIN employment_type et ON e.id = et.id";
+
 		PreparedStatement statement;
 		try {
 			statement = connection.prepareStatement(sql);
@@ -145,7 +150,8 @@ public class EmployeeDatabase {
 				employee.setMiddleName(rs.getString("middle_name"));
 				employee.setLastName(rs.getString("last_name"));
 				employee.setAddress(rs.getString("address"));
-				employee.setDepartment(rs.getString("department")); // Ensure this is correct
+				employee.setDepartment(rs.getString("department_name"));
+				employee.setEmploymentType(rs.getString("employment_type"));
 				employee.setWorkType(rs.getString("work_type"));
 				employee.setBasicSalary(rs.getDouble("rate"));
 				employee.setGrossPay(rs.getDouble("grossPay"));
@@ -213,9 +219,10 @@ public class EmployeeDatabase {
 			throw new SQLException("Connection is null. Make sure to establish the connection.");
 		}
 		String query = "SELECT e.id, e.first_name, e.last_name, e.address, d.department_name AS department, "
-				+ "t.work_type, e.rate, e.grossPay, e.netPay " + "FROM employees e "
+				+ "t.work_type, et.type AS employment_type, e.rate, e.grossPay, e.netPay " + "FROM employees e "
 				+ "LEFT JOIN types t ON e.work_type_id = t.id "
-				+ "LEFT JOIN department d ON e.department_id = d.department_id";
+				+ "LEFT JOIN department d ON e.department_id = d.department_id "
+				+ "LEFT JOIN employment_type et ON e.id = et.id";
 
 		PreparedStatement statement = connection.prepareStatement(query);
 
@@ -279,13 +286,13 @@ public class EmployeeDatabase {
 	}
 
 	public int getEmploymentTypeId(String employmentTypeName) {
-		String query = "SELECT employment_type_id FROM employment_type WHERE employment_type = ?";
+		String query = "SELECT id FROM employment_type WHERE type = ?";
 		try {
 			PreparedStatement ps = connection.prepareStatement(query);
 			ps.setString(1, employmentTypeName);
 			ResultSet rs = ps.executeQuery();
 			if (rs.next()) {
-				return rs.getInt("employment_type_id"); // Return the found department_id
+				return rs.getInt("id"); // Return the found employment_type_id
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -350,7 +357,7 @@ public class EmployeeDatabase {
 			java.sql.Date date_hired, double grossPay, double netPay) {
 
 		try {
-			String sql = "INSERT INTO employees (employee_id, first_name, last_name, address, work_type_id, rate, grossPay, netPay, gender, tel_number, DOB, email, profile_image, department_id, employment_type_id, date_hired) "
+			String sql = "INSERT INTO employees (employee_id, first_name, last_name, address, work_type_id, rate, grossPay, netPay, gender, tel_number, DOB, email, profile_image, department_id, id, date_hired) "
 					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			PreparedStatement statement = connection.prepareStatement(sql);
 
@@ -449,15 +456,15 @@ public class EmployeeDatabase {
 
 	public Employee getEmployeeById(int id) throws SQLException {
 		String sql = "SELECT e.*, d.department_name, t.work_type, et.type as employment_type "
-				   + "FROM employees e "
-				   + "LEFT JOIN department d ON e.department_id = d.department_id "
-				   + "LEFT JOIN types t ON e.work_type_id = t.id "
-				   + "LEFT JOIN employment_type et ON e.employment_type_id = et.id "
-				   + "WHERE e.id = ?";
+				+ "FROM employees e "
+				+ "LEFT JOIN department d ON e.department_id = d.department_id "
+				+ "LEFT JOIN types t ON e.work_type_id = t.id "
+				+ "LEFT JOIN employment_type et ON e.employment_type_id = et.id " // Corrected JOIN clause
+				+ "WHERE e.id = ?";
 		PreparedStatement statement = connection.prepareStatement(sql);
 		statement.setInt(1, id);
 		ResultSet rs = statement.executeQuery();
-	
+
 		if (rs.next()) {
 			Employee employee = new Employee();
 			employee.setId(rs.getInt("id"));
@@ -477,10 +484,10 @@ public class EmployeeDatabase {
 			// converts unix timestamp into a java.sql.Date
 			employee.setDateHired(Date.valueOf(Instant.ofEpochSecond(rs.getLong("date_hired"))
 					.atZone(ZoneId.systemDefault()).toLocalDateTime().toLocalDate()));
-	
+
 			employee.setDOB(Date.valueOf(Instant.ofEpochSecond(rs.getLong("DOB")).atZone(ZoneId.systemDefault())
 					.toLocalDateTime().toLocalDate()));
-	
+
 			byte[] imageData = rs.getBytes("profile_image");
 			if (imageData != null) {
 				employee.setProfileImage(imageData);
@@ -493,24 +500,24 @@ public class EmployeeDatabase {
 
 	public synchronized void updateEmployee(Employee employee) {
 		String sql = "UPDATE employees SET "
-				   + "first_name = ?, " // 1
-				   + "middle_name = ?, " // 2
-				   + "last_name = ?, " // 3
-				   + "address = ?, " // 4
-				   + "department_id = ?, " // 5
-				   + "work_type_id = ?, " // 6
-				   + "employment_type_id = ?, " // 7
-				   + "rate = ?, " // 8
-				   + "grossPay = ?, " // 9
-				   + "netPay = ?, " // 10
-				   + "gender = ?, " // 11
-				   + "tel_number = ?, " // 12
-				   + "email = ?, " // 13
-				   + "profile_image = ?, " // 14
-				   + "date_hired = ?, " // 15
-				   + "DOB = ? " // 16
-				   + "WHERE id = ?"; // 17
-	
+				+ "first_name = ?, " // 1
+				+ "middle_name = ?, " // 2
+				+ "last_name = ?, " // 3
+				+ "address = ?, " // 4
+				+ "department_id = ?, " // 5
+				+ "work_type_id = ?, " // 6
+				+ "id = ?, " // 7
+				+ "rate = ?, " // 8
+				+ "grossPay = ?, " // 9
+				+ "netPay = ?, " // 10
+				+ "gender = ?, " // 11
+				+ "tel_number = ?, " // 12
+				+ "email = ?, " // 13
+				+ "profile_image = ?, " // 14
+				+ "date_hired = ?, " // 15
+				+ "DOB = ? " // 16
+				+ "WHERE id = ?"; // 17
+
 		try (PreparedStatement statement = connection.prepareStatement(sql)) {
 			statement.setString(1, employee.getFirstName());
 			statement.setString(2, employee.getMiddleName());
@@ -530,13 +537,13 @@ public class EmployeeDatabase {
 			} else {
 				statement.setNull(14, java.sql.Types.BLOB);
 			}
-	
+
 			statement.setLong(15, employee.getDateHired().toLocalDate().atStartOfDay().atZone(ZoneId.systemDefault())
 					.toInstant().getEpochSecond());
-	
+
 			statement.setLong(16, employee.getDOB().toLocalDate().atStartOfDay().atZone(ZoneId.systemDefault())
 					.toInstant().getEpochSecond());
-	
+
 			statement.setInt(17, employee.getId());
 			statement.executeUpdate();
 			System.out.println("Record updated.");
@@ -579,16 +586,19 @@ public class EmployeeDatabase {
 		return false;
 	}
 
-	public void addTimeIn(int employeeId, String name, String date, Long timeIn, String note) {
+	public void addTimeIn(int employeeId, String name, String work_type, String status, String date, Long timeIn,
+			String note) {
 		try {
-			String query = "INSERT INTO attendance (employee_id, name, date, time_in, time_out, clock_IN_Note) VALUES (?, ?, ?, ?, ?, ?)";
+			String query = "INSERT INTO attendance (employee_id, name, work_type, status, date, time_in, time_out, clock_IN_Note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 			PreparedStatement stmt = connection.prepareStatement(query);
 			stmt.setInt(1, employeeId);
 			stmt.setString(2, name);
-			stmt.setString(3, date);
-			stmt.setLong(4, timeIn);
-			stmt.setLong(5, 0);
-			stmt.setString(6, note);
+			stmt.setString(3, work_type);
+			stmt.setString(4, status);
+			stmt.setString(5, date);
+			stmt.setLong(6, timeIn);
+			stmt.setLong(7, 0);
+			stmt.setString(8, note);
 			stmt.executeUpdate();
 			stmt.close();
 		} catch (SQLException e) {
@@ -597,19 +607,20 @@ public class EmployeeDatabase {
 	}
 
 	public void updateTimeOut(int employeeId, String date, Long timeOut, String clockOUTnote, int overtime,
-			double grossPay) {
+			int workedHours, double date_salary) {
 		try {
 			// SQL query to update time_out, note, and overtime
-			String query = "UPDATE attendance SET time_out = ?, clock_OUT_Note = ?, overtime = ?, grossPay = ? WHERE employee_id = ? AND date = ?";
+			String query = "UPDATE attendance SET time_out = ?, clock_OUT_Note = ?, overtime = ?, workedHours = ?, date_salary = ? WHERE employee_id = ? AND date = ?";
 			PreparedStatement stmt = connection.prepareStatement(query);
 
 			// Set parameters for the prepared statement
 			stmt.setLong(1, timeOut); // Time out value
 			stmt.setString(2, clockOUTnote); // Note text
 			stmt.setInt(3, overtime); // Overtime hours
-			stmt.setDouble(4, grossPay);
-			stmt.setInt(5, employeeId); // Employee ID
-			stmt.setString(6, date); // Attendance date
+			stmt.setInt(4, workedHours);
+			stmt.setDouble(5, date_salary); // salary of that date
+			stmt.setInt(6, employeeId); // Employee ID
+			stmt.setString(7, date); // Attendance date
 
 			// Execute the update
 			stmt.executeUpdate();
@@ -665,13 +676,25 @@ public class EmployeeDatabase {
 						formattedTimeOut,
 						rs.getString("clock_OUT_Note"),
 						rs.getInt("overtime") + "Hours",
-						rs.getString("grossPay")
+						rs.getString("date_salary")
 				});
 
 			}
 
 			rs.close();
 			stmt.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void insertAbsentRecord(int employeeId, String name, String date) {
+		String query = "INSERT INTO attendance (employee_id, name, date, status) VALUES (?, ?, ?, 'Absent')";
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setInt(1, employeeId);
+			stmt.setString(2, name);
+			stmt.setString(3, date);
+			stmt.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -708,13 +731,47 @@ public class EmployeeDatabase {
 						formattedTimeOut,
 						rs.getString("clock_OUT_Note"),
 						rs.getInt("overtime"),
-						rs.getString("grossPay") });
+						rs.getString("date_salary") });
 			}
 			rs.close();
 			stmt.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public LocalDate getLastClockInDate(int employeeId) {
+		String query = "SELECT MAX(date) AS last_date FROM attendance WHERE employee_id = ? AND time_in IS NOT NULL";
+		try (PreparedStatement stmt = connection.prepareStatement(query)) {
+			stmt.setInt(1, employeeId);
+			ResultSet rs = stmt.executeQuery();
+			if (rs.next()) {
+				String lastDateStr = rs.getString("last_date");
+				if (lastDateStr != null) {
+					return LocalDate.parse(lastDateStr);
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return null; // Return null if no date found or in case of an exception
+	}
+
+	public double getSumOfDateSalaryFrom1To15(int month, int year) {
+		double totalDateSalary = 0.0;
+		String sql = "SELECT SUM(date_salary) AS totalDateSalary FROM attendance WHERE strftime('%d', date) BETWEEN '01' AND '15' AND strftime('%m', date) = ? AND strftime('%Y', date) = ?";
+		try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+			stmt.setString(1, String.format("%02d", month)); // Ensure month is two digits
+			stmt.setString(2, Integer.toString(year));
+			ResultSet rs = stmt.executeQuery();
+			if (rs.next()) {
+				totalDateSalary = rs.getDouble("totalDateSalary");
+			}
+			rs.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return totalDateSalary;
 	}
 
 	/**

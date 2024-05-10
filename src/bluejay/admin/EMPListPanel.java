@@ -51,7 +51,7 @@ public class EMPListPanel extends JPanel {
 	private JPopupMenu popupMenu;
 	private JMenuItem menuItemRemove, menuItemEdit;
 	public final Map<String, String> workTypeMap = new HashMap<>();
-	private String[] column = { "ID", "First Name", "Last Name", "Address", "Department", "Work Type", "Basic Salary" };
+	private String[] column = { "ID", "First Name", "Last Name", "Address", "Department", "Employment Type", "Work Type", "Basic Salary" };
 	private EmployeeDatabase db;
 	private DefaultTableModel model = new DefaultTableModel(column, 0) {
 		private static final long serialVersionUID = 4L;
@@ -333,8 +333,8 @@ public class EMPListPanel extends JPanel {
 				try (ResultSet rs = db.getAllData()) {
 					while (rs.next()) {
 						publish(new Object[] { rs.getInt("id"), rs.getString("first_name"), rs.getString("last_name"),
-								rs.getString("address"), rs.getString("department"), rs.getString("work_type"),
-								rs.getDouble("rate") });
+								rs.getString("address"), rs.getString("department"), rs.getString("employment_type"),
+								rs.getString("work_type"), rs.getDouble("rate") });
 					}
 				}
 				return null;

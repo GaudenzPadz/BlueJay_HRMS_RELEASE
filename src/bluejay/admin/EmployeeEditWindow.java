@@ -60,6 +60,8 @@ class EmployeeEditWindow extends JDialog {
 	private JPanel panel;
 	private JButton btnNewButton;
 	private SqlDateModel model;
+	private JComboBox<String> employmentTypeComboBox;
+	private JLabel lblNewLabel;
 
 	public EmployeeEditWindow(JFrame parent, Employee employee, EmployeeDatabase db) {
 		super(parent, true);
@@ -74,6 +76,7 @@ class EmployeeEditWindow extends JDialog {
 		initializeComponents(); // Initialize all components
 		populateFields(); // Populate fields with employee data
 		setupLayout(); // Layout setup
+		populateEmploymentTypeComboBox();
 		setupActions(); // Set up action listeners
 	}
 
@@ -82,13 +85,13 @@ class EmployeeEditWindow extends JDialog {
 		mNameField = new JTextField();
 		lNameField = new JTextField();
 		addressField = new JTextField();
+		contactNumberField = new JTextField();
+		emailField = new JTextField();
 		wageField = new JTextField();
 		grossPayField = new JTextField();
 		netPayField = new JTextField();
-		contactNumberField = new JTextField();
-		emailField = new JTextField();
-		otherWorkTypeField = new JTextField();
-		otherWorkTypeField.setEnabled(false);
+		workTypeCombobox = new JComboBox<>();
+		employmentTypeComboBox = new JComboBox<>();
 
 		// Date picker setup
 		model = new SqlDateModel();
@@ -120,9 +123,6 @@ class EmployeeEditWindow extends JDialog {
 		ButtonGroup genderGroup = new ButtonGroup();
 		genderGroup.add(radioMale);
 		genderGroup.add(radioFemale);
-
-		// Work type combobox
-		workTypeCombobox = new JComboBox<>();
 		departmentComboBox = new JComboBox<>();
 		workTypeWageMap = new HashMap<>();
 
@@ -149,6 +149,7 @@ class EmployeeEditWindow extends JDialog {
 		addressField.setText(employee.getAddress());
 		contactNumberField.setText(employee.getContactNumber());
 		emailField.setText(employee.getEmail());
+		employmentTypeComboBox.setSelectedItem(employee.getEmploymentType());
 
 		if ("Male".equals(employee.getGender())) {
 			radioMale.setSelected(true);
@@ -164,12 +165,15 @@ class EmployeeEditWindow extends JDialog {
 			java.sql.Date dob = new java.sql.Date(employee.getDOB().getTime());
 			model.setValue(dob); // Correct way to set value for SqlDateModel
 		}
+		employmentTypeComboBox.setSelectedItem(employee.getEmploymentType());
+
 
 		wageField.setText(String.valueOf(employee.getBasicSalary()));
 		grossPayField.setText(String.valueOf(employee.getGrossPay()));
 		netPayField.setText(String.valueOf(employee.getNetPay()));
 
 		populateDepartmentComboBox(); // Populate departments
+		populateEmploymentTypeComboBox();
 		populateWorkTypeWageMap(); // Populate work type to wage map
 		populateWorkTypeComboBox(employee.getDepartment()); // Populate work types
 
@@ -180,7 +184,7 @@ class EmployeeEditWindow extends JDialog {
 	private void setupLayout() {
 		// Add components to the panel in a structured way
 		panel = new JPanel(new MigLayout("wrap, fillx, insets 35 45 30 45", "[180px,grow][100px][fill][grow,fill]",
-				"[][][][][][][][][][][][][][][][][]"));
+				"[][][][][][][][][][][][][][][][][][][]"));
 		getContentPane().add(panel, "alignx left,growy");
 		// Gender panel
 		JPanel genderPanel = new JPanel(new MigLayout("insets 0"));
@@ -220,18 +224,31 @@ class EmployeeEditWindow extends JDialog {
 		panel.add(new JLabel("Department"), "cell 2 8,alignx left");
 		panel.add(departmentComboBox, "cell 3 8,growx");
 
-		panel.add(new JLabel("Work Type"), "cell 2 9,alignx left");
-		panel.add(workTypeCombobox, "cell 3 9,growx");
-		panel.add(otherWorkTypeField, "cell 3 10,growx");
+		lblNewLabel = new JLabel("Employment Type");
+		panel.add(lblNewLabel, "cell 2 9,alignx trailing");
 
-		panel.add(new JLabel("Wage"), "cell 2 11,alignx left");
-		panel.add(wageField, "cell 3 11,growx");
+		panel.add(employmentTypeComboBox, "cell 3 9,growx");
 
-		panel.add(new JLabel("Gross Pay"), "cell 2 12,alignx left");
-		panel.add(grossPayField, "cell 3 12,growx");
+		JLabel label_3 = new JLabel("Work Type");
+		panel.add(label_3, "cell 2 10,alignx left");
 
-		panel.add(new JLabel("Net Pay"), "cell 2 13,alignx trailing");
-		panel.add(netPayField, "cell 3 13,growx");
+		// Work type combobox
+		panel.add(workTypeCombobox, "cell 3 10,growx");
+		otherWorkTypeField = new JTextField();
+		otherWorkTypeField.setEnabled(false);
+		panel.add(otherWorkTypeField, "cell 3 11,growx");
+
+		JLabel label_2 = new JLabel("Wage");
+		panel.add(label_2, "cell 2 12,alignx left");
+		panel.add(wageField, "cell 3 12,growx");
+
+		JLabel label_1 = new JLabel("Gross Pay");
+		panel.add(label_1, "cell 2 13,alignx left");
+		panel.add(grossPayField, "cell 3 13,growx");
+
+		JLabel label = new JLabel("Net Pay");
+		panel.add(label, "cell 2 14,alignx trailing");
+		panel.add(netPayField, "cell 3 14,growx");
 
 		btnNewButton = new JButton("Cancel");
 		btnNewButton.addActionListener(new ActionListener() {
@@ -240,11 +257,25 @@ class EmployeeEditWindow extends JDialog {
 				dispose(); // Call method to cancel
 			}
 		});
-		panel.add(btnNewButton, "cell 0 15,growx");
+		panel.add(btnNewButton, "cell 0 16,growx");
 
 		// Buttons
 		saveBtn = new JButton("Save");
-		panel.add(saveBtn, "cell 3 15");
+		panel.add(saveBtn, "cell 3 16");
+	}
+
+	private void populateEmploymentTypeComboBox() {
+		try {
+			ResultSet rs = db.getEmploymentTypes(); // Fetch employment type data
+			employmentTypeComboBox.removeAllItems(); // Clear existing items
+			while (rs.next()) {
+				String employmentType = rs.getString("type");
+				employmentTypeComboBox.addItem(employmentType); // Add to JComboBox
+			}
+		} catch (SQLException ex) {
+			ex.printStackTrace();
+			JOptionPane.showMessageDialog(null, "Error fetching employment types.", "Error", JOptionPane.ERROR_MESSAGE);
+		}
 	}
 
 	private void setupActions() {

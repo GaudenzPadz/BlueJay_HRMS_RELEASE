@@ -41,9 +41,11 @@ public class Employee {
 	private LocalDateTime timeOUT;
 	private String created_at;
 	private String EmploymentType;
-
+	private int hoursWorked;
+    private int overtimeHours;
 	public Employee(int id, String firstName, String middleName, String lastName, String address, String department,
-			String EmploymentType, String workType, double basicSalary, double ratePerDay, double grossPay, double netPay, String gender) {
+			String EmploymentType, String workType, double basicSalary, double ratePerDay, double grossPay,
+			double netPay, String gender) {
 		// Initialize
 		this.id = id;
 		this.firstName = firstName;
@@ -82,13 +84,21 @@ public class Employee {
 	}
 
 	// GETTERS
-	public int getId() {
+	public int getId(){
 		return id;
 	}
 
+    public int getovertimeHours(){
+		return overtimeHours;
+	}
 	public String getDepartment() {
 
 		return department;
+	}
+
+	public double getHoursWorked() {
+
+		return hoursWorked;
 	}
 
 	public String getFirstName() {
@@ -213,6 +223,12 @@ public class Employee {
 		this.id = id;
 	}
 
+public void setoOvertimeHours(int overtimeHours){
+	this.overtimeHours =overtimeHours;
+}
+public void setHoursWorked(int hoursWorked) {
+		this.hoursWorked = hoursWorked;
+	}
 	public void setFirstName(String firstName) {
 		this.firstName = firstName;
 	}
@@ -320,18 +336,30 @@ public class Employee {
 	}
 
 	// METHODS TO CALCULATE
-
-	// Method to calculate the total deduction
-
-	public double calculateGrossPay(int workedHours, int overtimeHours) {
-		int calculatedWorkedHours = (overtimeHours != 0) ? workedHours + overtimeHours : workedHours;
-		System.out.println("gross pay calculating (debug)");
-		System.out.println("worked hours: " + workedHours);
-		System.out.println("Overtime hours: " + overtimeHours);
-		
-		return calculatedWorkedHours ;
+	public double calculateFullTime(double ratePerHour, int hoursWorked) {
+	this.ratePerDay = ratePerHour;
+	this.hoursWorked = hoursWorked;
+    double grossPay = ratePerHour * hoursWorked;
+	 setGrossPay(grossPay);
+	 return grossPay;
 	}
-
+	
+    // CALCULATION OF PART TIME 
+    public double calculatePartTime(double basicSalary, int hoursWorked){
+    this.basicSalary = basicSalary;
+	this.hoursWorked = hoursWorked;
+	double partTimeGrossPay = basicSalary * hoursWorked /2;
+		return partTimeGrossPay;
+	}
+    
+	//CALCULATION OF PROJECT BASED
+	public double calculateProjectBased(){
+		return 0;
+	}
+	
+	public double calculate15thGrossPay(){
+		return 0;
+	}
 	public double totalDeductions() {
 		return getPAG_IBIG() + getPHILHEALTH() + getSSS();
 	}
@@ -365,19 +393,17 @@ public class Employee {
 		this.created_at = currentDate;
 	}
 
-	public String getCreated_At()
-	{
+	public String getCreated_At() {
 		return created_at;
 	}
 
-    public String getEmploymentType() {
+	public String getEmploymentType() {
 
 		return EmploymentType;
-    }
+	}
 
 	public void setEmploymentType(String EmploymentType) {
 		this.EmploymentType = EmploymentType;
 	}
-	
-}
 
+}

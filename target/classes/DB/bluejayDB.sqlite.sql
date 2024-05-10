@@ -39,21 +39,6 @@ CREATE TABLE IF NOT EXISTS "types" (
 	PRIMARY KEY("id"),
 	FOREIGN KEY("department_id") REFERENCES "department"("department_id")
 );
-CREATE TABLE IF NOT EXISTS "attendance" (
-	"id"	INTEGER,
-	"date"	TEXT,
-	"employee_id"	INTEGER,
-	"name"	TEXT,
-	"work_type"	TEXT,
-	"status"	TEXT,
-	"time_in"	INTEGER,
-	"clock_IN_Note"	TEXT,
-	"time_out"	INTEGER,
-	"clock_OUT_Note"	TEXT,
-	"overtime"	INTEGER,
-	"grossPay"	INTEGER,
-	PRIMARY KEY("id" AUTOINCREMENT)
-);
 CREATE TABLE IF NOT EXISTS "users" (
 	"ID"	INTEGER,
 	"employee_ID"	INTEGER,
@@ -88,16 +73,38 @@ CREATE TABLE IF NOT EXISTS "employees" (
 	"date_hired"	INTEGER,
 	"DOB"	INTEGER,
 	PRIMARY KEY("id" AUTOINCREMENT),
-	FOREIGN KEY("employment_type_id") REFERENCES "employment_type"("id"),
 	FOREIGN KEY("work_type_id") REFERENCES "types"("id"),
+	FOREIGN KEY("employment_type_id") REFERENCES "employment_type"("id"),
 	FOREIGN KEY("department_id") REFERENCES "department"("department_id")
+);
+CREATE TABLE IF NOT EXISTS "grossPayTable" (
+	"id"	INTEGER,
+	"grossPay"	INTEGER,
+	PRIMARY KEY("id")
+);
+CREATE TABLE IF NOT EXISTS "attendance" (
+	"id"	INTEGER,
+	"date"	TEXT,
+	"employee_id"	INTEGER,
+	"name"	TEXT,
+	"employment_type"	TEXT,
+	"work_type"	TEXT,
+	"status"	TEXT,
+	"time_in"	INTEGER,
+	"clock_IN_Note"	TEXT,
+	"time_out"	INTEGER,
+	"clock_OUT_Note"	TEXT,
+	"overtime"	INTEGER,
+	"workedHours"	INTEGER,
+	"date_salary"	INTEGER,
+	PRIMARY KEY("id" AUTOINCREMENT)
 );
 INSERT INTO "deductions" ("id","SSS","PAG_IBIG","PHILHEALTH","advanced") VALUES (1,570,100,500,NULL);
 INSERT INTO "department" ("department_id","department_name","department_description") VALUES (1,'Welding Department','Welders Department');
 INSERT INTO "department" ("department_id","department_name","department_description") VALUES (2,'Human Resources Department','HR Team');
-INSERT INTO "types" ("id","department_id","work_type","abbreviation","wage") VALUES (1,1,'Shielded Metal Arc Welding','SMAW',500);
+INSERT INTO "types" ("id","department_id","work_type","abbreviation","wage") VALUES (1,1,'Shielded Metal Arc Welding','SMAW',420);
 INSERT INTO "types" ("id","department_id","work_type","abbreviation","wage") VALUES (2,1,'Gas Tungsten Arc Welding','GTAW',900);
-INSERT INTO "types" ("id","department_id","work_type","abbreviation","wage") VALUES (3,1,'Flux-cored Arc Welding','FCAW',900);
+INSERT INTO "types" ("id","department_id","work_type","abbreviation","wage") VALUES (3,1,'Flux-cored Arc Welding','FCAW',150);
 INSERT INTO "types" ("id","department_id","work_type","abbreviation","wage") VALUES (4,1,'Gas Metal Arc Welding ','GMAW',1000);
 INSERT INTO "types" ("id","department_id","work_type","abbreviation","wage") VALUES (5,2,'HR Head','HR',10000);
 INSERT INTO "users" ("ID","employee_ID","name","username","password","role") VALUES (0,NULL,'ADMIN','admin','admin','ADMIN');

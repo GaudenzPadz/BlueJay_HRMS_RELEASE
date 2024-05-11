@@ -17,7 +17,7 @@ public class Employee {
 	private String lastName;
 	private String address;
 	private String workType;
-	private double basicSalary;
+	private double ratePerHour;
 	private double grossPay;
 	private double netPay;
 	private String gender;
@@ -35,8 +35,6 @@ public class Employee {
 	private Date dateHired;
 	private ImageIcon profileImage;
 	private String department;
-	private double ratePerDay;
-	private double ratePerHour;
 	private LocalDateTime timeIN;
 	private LocalDateTime timeOUT;
 	private String created_at;
@@ -44,7 +42,7 @@ public class Employee {
 	private int hoursWorked;
     private int overtimeHours;
 	public Employee(int id, String firstName, String middleName, String lastName, String address, String department,
-			String EmploymentType, String workType, double basicSalary, double ratePerDay, double grossPay,
+			String EmploymentType, String workType, double ratePerHour, double grossPay,
 			double netPay, String gender) {
 		// Initialize
 		this.id = id;
@@ -55,8 +53,7 @@ public class Employee {
 		this.department = department;
 		this.EmploymentType = EmploymentType;
 		this.workType = workType;
-		this.basicSalary = basicSalary;
-		this.ratePerDay = ratePerDay;
+		this.ratePerHour = ratePerHour;
 		this.grossPay = grossPay;
 		this.netPay = netPay;
 		this.gender = gender;
@@ -76,7 +73,7 @@ public class Employee {
 		this.address = updatedAddress;
 		this.department = updatedDepartment;
 		this.workType = updatedWorkType;
-		this.basicSalary = updatedRate;
+		this.ratePerHour = updatedRate;
 
 	}
 
@@ -121,13 +118,10 @@ public class Employee {
 		return workType;
 	}
 
-	public double getBasicSalary() {
-		return basicSalary;
-	}
-
 	public double getRatePerHour() {
 		return ratePerHour;
 	}
+
 
 	public String getGender() {
 		return gender;
@@ -189,10 +183,6 @@ public class Employee {
 		return dateHired;
 	}
 
-	public double getRatePerDay() {
-
-		return ratePerDay;
-	}
 
 	public ImageIcon getProfileImage() {
 		return profileImage;
@@ -254,8 +244,8 @@ public void setHoursWorked(int hoursWorked) {
 		this.workType = workType;
 	}
 
-	public void setBasicSalary(double basicSalary) {
-		this.basicSalary = basicSalary;
+	public void setRatePerHour(double ratePerHour) {
+		this.ratePerHour = ratePerHour;
 	}
 
 	public void setGrossPay(double grossPay) {
@@ -318,15 +308,6 @@ public void setHoursWorked(int hoursWorked) {
 		this.daysWorked = daysWorked;
 	}
 
-	public void setRatePerDay(double double1) {
-
-		this.ratePerDay = double1;
-	}
-
-	public void setRatePerHour(double ratePerHour) {
-		this.ratePerHour = ratePerHour;
-	}
-
 	public void setProfileImage(byte[] imageData) {
 		if (imageData != null) {
 			this.profileImage = new ImageIcon(imageData);
@@ -337,24 +318,22 @@ public void setHoursWorked(int hoursWorked) {
 
 	// METHODS TO CALCULATE
 	public double calculateFullTime(double ratePerHour, int hoursWorked) {
-	this.ratePerDay = ratePerHour;
-	this.hoursWorked = hoursWorked;
-    double grossPay = ratePerHour * hoursWorked;
-	 setGrossPay(grossPay);
-	 return grossPay;
+		double grossPay = ratePerHour * hoursWorked;
+		setGrossPay(grossPay);
+		return grossPay;
 	}
 	
-    // CALCULATION OF PART TIME 
-    public double calculatePartTime(double basicSalary, int hoursWorked){
-    this.basicSalary = basicSalary;
-	this.hoursWorked = hoursWorked;
-	double partTimeGrossPay = basicSalary * hoursWorked /2;
+	public double calculatePartTime(double basicSalary, int hoursWorked) {
+		double partTimeGrossPay = basicSalary * hoursWorked / 2;
+		setGrossPay(partTimeGrossPay);
 		return partTimeGrossPay;
 	}
-    
+
 	//CALCULATION OF PROJECT BASED
-	public double calculateProjectBased(){
-		return 0;
+	public double calculateProjectBased(double ratePerHour, int projectCompleted){
+		double grossPay = ratePerHour * projectCompleted;
+		setGrossPay(grossPay);
+		return grossPay;
 	}
 	
 	public double calculate15thGrossPay(){

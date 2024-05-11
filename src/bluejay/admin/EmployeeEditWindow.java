@@ -168,7 +168,7 @@ class EmployeeEditWindow extends JDialog {
 		employmentTypeComboBox.setSelectedItem(employee.getEmploymentType());
 
 
-		wageField.setText(String.valueOf(employee.getBasicSalary()));
+		wageField.setText(String.valueOf(employee.getRatePerHour()));
 		grossPayField.setText(String.valueOf(employee.getGrossPay()));
 		netPayField.setText(String.valueOf(employee.getNetPay()));
 
@@ -452,7 +452,7 @@ class EmployeeEditWindow extends JDialog {
 				employee.setWorkType(selectedWorkType); // Normal work type
 			}
 
-			employee.setBasicSalary(Double.parseDouble(wageField.getText()));
+			employee.setRatePerHour(Double.parseDouble(wageField.getText()));
 			employee.setGrossPay(Double.parseDouble(grossPayField.getText()));
 			employee.setNetPay(Double.parseDouble(netPayField.getText()));
 			employee.setGender(radioMale.isSelected() ? "Male" : "Female");

@@ -6,6 +6,20 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "bluejay.Main",
+            "projectName": "HRMS"
+        },
+        {
+            "type": "java",
+            "name": "Dashboard",
+            "request": "launch",
+            "mainClass": "bluejay.admin.Dashboard",
+            "projectName": "HRMS"
+        },
+        {
+            "type": "java",
             "name": "CheckDB",
             "request": "launch",
             "mainClass": "bluejay.CheckDB",

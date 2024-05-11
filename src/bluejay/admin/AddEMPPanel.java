@@ -112,6 +112,23 @@ public class AddEMPPanel extends JPanel {
 		// Initialize work type to wage mapping
 		workTypeWageMap = new HashMap<>();
 		employmentTypeComboBox = new JComboBox<>();
+		// Add ActionListener to employmentTypeComboBox to handle changes in employ type
+		employmentTypeComboBox.addActionListener((ActionEvent e) -> {
+			String selectedType = (String) employmentTypeComboBox.getSelectedItem();
+			if ("Project Based".equals(selectedType)) {
+				lblRate.setText("Rate Per Project");
+				wageField.setText(""); // Clear any existing text
+				wageField.setEnabled(true); // Enable the wage field for input
+				wageField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter Rate Per Project");
+				wageField.repaint(); // Ensure the UI updates to show the new placeholder text
+			} else {
+				lblRate.setText("Rate Per Hour");
+				wageField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter Wage");
+				wageField.setEnabled(true); // Enable the wage field for input
+				updateWageField(); // Populate the wage based on the selected work type
+				wageField.repaint(); // Ensure the UI updates to show the new placeholder text
+			}
+		});
 
 		workTypeCombobox = new JComboBox<>();
 		wageField = new JTextField(10);
@@ -179,7 +196,6 @@ public class AddEMPPanel extends JPanel {
 
 		panel.add(new JLabel("Department"), "cell 0 3");
 
-
 		employmentTypeComboBox.setEnabled(false); // Disable Employment Type comboBox
 		workTypeCombobox.setEnabled(false); // Disable Work Type comboBox
 		workTypeField.setEnabled(false); // Disable Work Type field
@@ -221,7 +237,7 @@ public class AddEMPPanel extends JPanel {
 				workTypeField.setEnabled(true); // Enable the JTextField for custom input
 				wageField.setEnabled(true); // Enable Wage field
 				wageField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter Wage");
-workTypeCombobox.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Work Type");
+				workTypeCombobox.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Work Type");
 
 			} else {
 				wageField.setEnabled(true); // Disable Wage field
@@ -229,7 +245,7 @@ workTypeCombobox.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Work 
 
 			}
 		});
-		
+
 		panel.add(departmentComboBox, "cell 0 4,growx");
 
 		lblNewLabel_8 = new JLabel("Employment Type");
@@ -242,9 +258,8 @@ workTypeCombobox.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Work 
 		panel.add(workTypeCombobox, "flowx,cell 0 8,alignx right");
 		panel.add(workTypeField, "cell 0 8,alignx right");
 
-		lblRate = new JLabel("Wage");
+		lblRate = new JLabel("Rate Per Hour");
 		panel.add(lblRate, "cell 0 9");
-
 
 		panel.add(wageField, "cell 0 10,growx");
 
@@ -300,7 +315,7 @@ workTypeCombobox.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Work 
 		};
 		DOBField = new JDatePickerImpl(datePanel, DateLabelFormatter);
 		panel.add(DOBField, "cell 0 21,growx");
-		
+
 		panel.add(new JSeparator(), "cell 0 22,gapy 5 5");
 
 		JLabel lblNewLabel = new JLabel("Username");
@@ -399,7 +414,7 @@ workTypeCombobox.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Work 
 			ResultSet rs = db.getTypes(); // Get data from the database
 			while (rs.next()) {
 				String workType = rs.getString("work_type");
-				int wage = rs.getInt("wage");
+				int wage = rs.getInt("rate_per_hour");
 				workTypeWageMap.put(workType, wage); // Store in the map
 			}
 		} catch (SQLException e) {
@@ -411,13 +426,15 @@ workTypeCombobox.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Work 
 
 	private void updateWageField() {
 		String selectedWorkType = (String) workTypeCombobox.getSelectedItem();
-		if (selectedWorkType != null) {
+		if (selectedWorkType != null && workTypeWageMap.containsKey(selectedWorkType)) {
 			Integer wage = workTypeWageMap.get(selectedWorkType);
 			if (wage != null) {
 				wageField.setText(String.valueOf(wage)); // Set the wage value
 			} else {
 				wageField.setText(""); // No wage found, clear the field
 			}
+		} else {
+			wageField.setText(""); // Clear the field if no work type is selected or no wage is found
 		}
 	}
 
@@ -560,7 +577,6 @@ workTypeCombobox.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Work 
 		}
 	}
 
-
 	private void saveEmployeeToDatabase() {
 		// Retrieve text from fields
 		String firstName = fNameField.getText();
@@ -582,19 +598,20 @@ workTypeCombobox.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Work 
 		if (selectedDate != null) {
 			DOB = new java.sql.Date(selectedDate.getTime());
 		}
-	
+
 		// Ensure the date is not null before proceeding
 		if (DOB == null) {
 			JOptionPane.showMessageDialog(null, "Please select a valid date.", "Error", JOptionPane.ERROR_MESSAGE);
 			return;
 		}
-	
+
 		// Ensure required fields are filled
 		if (!validateAndHighlight()) {
-			JOptionPane.showMessageDialog(null, "Please correct the highlighted fields.", "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(null, "Please correct the highlighted fields.", "Error",
+					JOptionPane.ERROR_MESSAGE);
 			return; // Exit early if validation fails
 		}
-	
+
 		try {
 			byte[] imageData = fileToByteArray(selectedFile);
 			double wage = Double.valueOf(wageField.getText());
@@ -602,26 +619,29 @@ workTypeCombobox.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Work 
 			Date dateToday = Date.valueOf(localDate);
 			double grossPay = 0; // This might need to be calculated based on other data
 			double netPay = 0; // This might need to be calculated based on other data
-	
+
 			// Insert data into the employees table
 			db.insertEMPData(newId, firstName, lastName, address,
-			 workTypeId, wage, gender, telNum, DOB, email, imageData, 
-			 departmentId, employmentTypeId, dateToday, grossPay, netPay);
-	
-			// Optionally insert data into the users table if the employee needs login credentials
+					workTypeId, wage, gender, telNum, DOB, email, imageData,
+					departmentId, employmentTypeId, dateToday, grossPay, netPay);
+
+			// Optionally insert data into the users table if the employee needs login
+			// credentials
 			db.insertEMPCredentials(newId, firstName + " " + lastName, username, password, "Employee");
-	
-			JOptionPane.showMessageDialog(null, "Employee added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-	
+
+			JOptionPane.showMessageDialog(null, "Employee added successfully.", "Success",
+					JOptionPane.INFORMATION_MESSAGE);
+
 			// Clear the fields after successful insertion
 			clearFormFields();
-	
+
 		} catch (Exception ex) {
-			JOptionPane.showMessageDialog(null, "An error occurred while adding the employee. Please try again.", "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(null, "An error occurred while adding the employee. Please try again.",
+					"Error", JOptionPane.ERROR_MESSAGE);
 			ex.printStackTrace();
 		}
 	}
-	
+
 	private void clearFormFields() {
 		fNameField.setText("");
 		lNameField.setText("");

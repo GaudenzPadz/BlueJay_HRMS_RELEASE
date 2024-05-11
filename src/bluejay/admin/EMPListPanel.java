@@ -313,8 +313,8 @@ public class EMPListPanel extends JPanel {
 			JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(EMPListPanel.this);
 			EmployeeEditWindow editWindow = new EmployeeEditWindow(parentFrame, employee, db);
 			editWindow.setVisible(true);
-		} catch (SQLException ex) {
-			JOptionPane.showMessageDialog(null, "Failed to retrieve employee data: " + ex.getMessage(),
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(null, "Failed to retrieve employee data: " + e.getMessage(),
 					"Database Error", JOptionPane.ERROR_MESSAGE);
 		}
 

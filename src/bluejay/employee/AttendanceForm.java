@@ -38,15 +38,15 @@ import bluejay.Employee;
 import bluejay.Main;
 import bluejayDB.EmployeeDatabase;
 import net.miginfocom.swing.MigLayout;
+import javax.swing.JTextField;
 
 public class AttendanceForm extends JPanel {
 
 	private static final long serialVersionUID = 1L;
 	private Employee employee;
 	JComboBox<String> AmPmCombo;
-	private String[] column = {
-			"Name", "Date", "Status", "Time In", "Time In Note", "Time Out", "Time Out Note", "Overtime",
-			"Worked Hours", "Salary of That Day" }; // add a actions button (like details) to the table
+	private String[] column = { "Name", "Date", "Status", "Time In", "Time In Note", "Time Out", "Time Out Note",
+			"Overtime", "Worked Hours", "Salary of That Day" }; // add a actions button (like details) to the table
 
 	private DefaultTableModel attendanceModel = new DefaultTableModel(column, 0) {
 		private static final long serialVersionUID = 7292205409469675412L;
@@ -69,6 +69,7 @@ public class AttendanceForm extends JPanel {
 	private JSpinner hourOUTField;
 	private JSpinner minutesOUTField;
 	private String name;
+	private JTextField grossPayField;
 
 	public AttendanceForm(Employee employee, EmployeeDatabase DB) {
 		this.employee = employee;
@@ -77,31 +78,57 @@ public class AttendanceForm extends JPanel {
 		attendanceTable = new JTable(attendanceModel);
 
 		refreshTable(attendanceModel);
+		setupUI(shiftEndedPanel());
+
 		ifClockedIN();
 
 	}
 
-	private void ifClockedIN() {
-		String currentDate = LocalDate.now().toString(); // Format is YYYY-MM-DD
-		System.out.println(db.hasCheckedIn(employee.getId(), name, currentDate));
-		if (db.hasCheckedIn(employee.getId(), name, currentDate)) {
-			FlatAnimatedLafChange.showSnapshot();
-			removeAll();
-			setupUI(attendanceOUTForm());
-			revalidate();
-			repaint();
-		} else {
-			removeAll();
-			setupUI(attendanceForm());
-			revalidate();
-			repaint();
+	private List<LocalDate> getMissingDates(LocalDate lastDate, LocalDate currentDate) {
+		List<LocalDate> missingDates = new ArrayList<>();
+		long daysBetween = ChronoUnit.DAYS.between(lastDate, currentDate);
+		for (int i = 1; i < daysBetween; i++) {
+			missingDates.add(lastDate.plusDays(i));
 		}
+		return missingDates;
+	}
+
+	private void ifClockedIN() {
+		LocalDate lastDate = db.getLastClockInDate(employee.getId());
+		LocalDate currentDate = LocalDate.now();
+
+		// Check for missing dates and mark them as absent
+		if (lastDate != null && !lastDate.isEqual(currentDate)) {
+			List<LocalDate> missingDates = getMissingDates(lastDate, currentDate);
+			markAbsentDays(missingDates, employee.getId(), name);
+		}
+
+		String attendanceStatus = db.checkAttendanceStatus(employee.getId(), name, currentDate.toString());
+
+		FlatAnimatedLafChange.showSnapshot();
+		removeAll();
+
+		switch (attendanceStatus) {
+			case "shiftEnded":
+				setupUI(shiftEndedPanel());
+				break;
+			case "noTimeOut":
+				setupUI(attendanceOUTForm());
+				break;
+			default:
+				setupUI(attendanceForm());
+				break;
+		}
+		updateGrossPayField(); // Update the gross pay field whenever the attendance status is checked
+		revalidate();
+		repaint();
 		FlatAnimatedLafChange.hideSnapshotWithAnimation();
 	}
 
-	private void refreshTable(DefaultTableModel modely) {
-		modely.setRowCount(0);
-		db.loadEMPAttendanceData(employee.getId(), modely);
+	private void markAbsentDays(List<LocalDate> missingDates, int employeeId, String employeeName) {
+		for (LocalDate date : missingDates) {
+			db.insertAbsentRecordWithNoTime(employeeId, employeeName, date.toString());
+		}
 	}
 
 	private boolean validateTime(String hoursStr, String minutesStr) {
@@ -129,7 +156,7 @@ public class AttendanceForm extends JPanel {
 		JPanel headerPanel = new JPanel();
 		headerPanel.setBackground(new Color(0, 191, 255).darker());
 		headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-		headerPanel.setLayout(new MigLayout("", "[left][]", "[50px,grow]"));
+		headerPanel.setLayout(new MigLayout("", "[left][][grow]", "[50px,grow]"));
 		ImageIcon backIcon = new ImageIcon(getClass().getResource("/images/back.png"));
 
 		JButton btnNewButton = new JButton("");
@@ -150,6 +177,10 @@ public class AttendanceForm extends JPanel {
 		lblNewLabel.setFont(new Font("SansSerif", Font.BOLD, 20));
 		headerPanel.add(lblNewLabel, "cell 1 0");
 		add(headerPanel, BorderLayout.NORTH);
+
+		JPanel panel = new JPanel();
+		panel.setBackground(null);
+		headerPanel.add(panel, "cell 2 0,grow");
 
 		JPanel mainPanel = new JPanel(new MigLayout("fill,insets 20", "[center]", "[center][center]"));
 		add(mainPanel, BorderLayout.CENTER);
@@ -217,24 +248,19 @@ public class AttendanceForm extends JPanel {
 			int hours = (Integer) INhourField.getValue();
 			int minutes = (Integer) INminutesField.getValue();
 			String ampm = (String) AmPmCombo.getSelectedItem();
-			String noteIN = clockINnote.getText();
-
-			// Convert to 24-hour format
 			if (ampm.equals("PM") && hours < 12) {
 				hours += 12;
 			} else if (ampm.equals("AM") && hours == 12) {
 				hours = 0; // Midnight is 0
 			}
 
-			// Use system's default zone id
 			ZoneId zoneId = ZoneId.systemDefault();
 			LocalDateTime dateTime = LocalDate.now(zoneId).atTime(hours, minutes);
 			long unixTimestamp = dateTime.atZone(zoneId).toEpochSecond();
 
-			System.out.println(unixTimestamp);
-			String status = "Active";
+			db.addTimeIn(employee.getId(), name, employee.getEmploymentType(), "Active", currentDate, unixTimestamp,
+					clockINnote.getText());
 
-			db.addTimeIn(employee.getId(), name, employee.getEmploymentType(), status, currentDate, unixTimestamp, noteIN);
 			employee.setTimeIn(dateTime);
 
 			JOptionPane.showMessageDialog(this, "Time In recorded.");
@@ -284,32 +310,20 @@ public class AttendanceForm extends JPanel {
 		return attendanceOUTForm;
 	}
 
-	private List<LocalDate> getMissingDates(LocalDate lastDate, LocalDate currentDate) {
-		List<LocalDate> missingDates = new ArrayList<>();
-		long daysBetween = ChronoUnit.DAYS.between(lastDate, currentDate);
-		for (int i = 1; i < daysBetween; i++) {
-			missingDates.add(lastDate.plusDays(i));
-		}
-		return missingDates;
-	}
-
-	private void markAbsentDays(List<LocalDate> missingDates, int employeeId, String employeeName) {
-		for (LocalDate date : missingDates) {
-			db.insertAbsentRecord(employeeId, employeeName, date.toString());
-		}
-	}
-
 	public double calculateGrossPayFrom1To15() {
 		double totalGrossPay = 0.0;
 		int dateColumnIndex = 1; // Assuming the date is in the second column
 		int grossPayColumnIndex = 9; // Assuming the grossPay is in the tenth column
-	
+
 		for (int i = 0; i < attendanceModel.getRowCount(); i++) {
 			String dateStr = (String) attendanceModel.getValueAt(i, dateColumnIndex);
 			LocalDate date = LocalDate.parse(dateStr);
 			if (date.getDayOfMonth() >= 1 && date.getDayOfMonth() <= 15) {
-				double grossPay = Double.parseDouble(attendanceModel.getValueAt(i, grossPayColumnIndex).toString());
-				totalGrossPay += grossPay;
+				Object grossPayObj = attendanceModel.getValueAt(i, grossPayColumnIndex);
+				if (grossPayObj != null) {
+					double grossPay = Double.parseDouble(grossPayObj.toString());
+					totalGrossPay += grossPay;
+				}
 			}
 		}
 		return totalGrossPay;
@@ -323,34 +337,48 @@ public class AttendanceForm extends JPanel {
 			if (ampm.equals("PM") && hours < 12) {
 				hours += 12;
 			} else if (ampm.equals("AM") && hours == 12) {
-				hours = 0;
+				hours = 0; // Midnight adjustment
 			}
-			ZoneId zoneId = ZoneId.systemDefault();
-			LocalDateTime dateTime = LocalDate.now(zoneId).atTime(hours, minutes);
-			long unixTimestampOUT = dateTime.atZone(zoneId).toEpochSecond();
-			int overtimeHours = calculateOvertime(hours, minutes);
-			db.updateTimeOut(employee.getId(), LocalDate.now().toString(), unixTimestampOUT, clockOUTnote.getText(), overtimeHours, calculateWorkedHours(employee.getTimeIN(), dateTime, overtimeHours), employee.getGrossPay());
-			JOptionPane.showMessageDialog(this, "Time Out recorded with " + overtimeHours + " hours of overtime.");
+			LocalDateTime timeOut = LocalDate.now().atTime(hours, minutes);
+			LocalDateTime timeIn = employee.getTimeIN();
+
+			// Check if timeIn is null
+			if (timeIn == null) {
+				JOptionPane.showMessageDialog(this, "No Time In recorded for today. Cannot record Time Out.", "Error",
+						JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+
+			if (timeOut.isBefore(timeIn)) { // Crossed to next day
+				timeOut = timeOut.plusDays(1);
+			}
+			long unixTimestampOUT = timeOut.atZone(ZoneId.systemDefault()).toEpochSecond();
+			int workedHoursManual = calculateWorkedHours(timeIn, timeOut);
+			int overtimeHours = calculateOvertime(workedHoursManual);
+
+			// Calculate salary based on employment type
+			double ratePerHour = employee.getRatePerHour();
+			double salary = db.calculateSalaryByEmploymentType(employee.getId(), ratePerHour, workedHoursManual);
+
+			db.updateTimeOut(employee.getId(), LocalDate.now().toString(), unixTimestampOUT, "Shift Ended",
+					clockOUTnote.getText(), overtimeHours, workedHoursManual, salary);
+			JOptionPane.showMessageDialog(this, "Time Out recorded. Total Worked Hours: " + workedHoursManual
+					+ ", Overtime Hours: " + overtimeHours + ", Salary: " + salary);
 			refreshTable(attendanceModel);
 			ifClockedIN();
+			revalidate();
 		}
 	}
 
-	private int calculateWorkedHours(LocalDateTime timeIn, LocalDateTime timeOut, int overtimeHours) {
+	private int calculateWorkedHours(LocalDateTime timeIn, LocalDateTime timeOut) {
 		long duration = ChronoUnit.SECONDS.between(timeIn, timeOut);
-		int hoursBetween = (int) (duration / 3600); // Convert seconds to hours
-		return hoursBetween + overtimeHours;
+		return (int) (duration / 3600); // Convert seconds to hours
 	}
 
-	private int calculateOvertime(int hours, int minutes) {
-		// Assuming work hours are from 8 AM to 5 PM
-		LocalDateTime endTime = LocalDate.now().atTime(17, 0); // 5 PM
-		LocalDateTime outTime = LocalDate.now().atTime(hours, minutes);
-		if (outTime.isAfter(endTime)) {
-			long overtimeMinutes = java.time.Duration.between(endTime, outTime).toMinutes();
-			return (int) (overtimeMinutes / 60); // Convert minutes to hours
-		}
-		return 0;
+	private int calculateOvertime(int workedHours) {
+		int standardWorkdayHours = 9; // Define standard workday hours
+		return Math.max(0, workedHours - standardWorkdayHours); // Overtime is any hours worked beyond the standard
+																// hours
 	}
 
 	private JPanel shiftEndedPanel() {
@@ -358,9 +386,7 @@ public class AttendanceForm extends JPanel {
 		JLabel label = new JLabel("Shift Ended. Your attendance has been recorded.");
 		label.setFont(new Font("SansSerif", Font.BOLD, 16));
 		panel.add(label, "cell 0 0,alignx center");
-	
-		// Reuse the attendance table panel
-		panel.add(attendanceTable(), "cell 0 1,grow");
+
 		return panel;
 	}
 
@@ -370,28 +396,57 @@ public class AttendanceForm extends JPanel {
 
 		TableColumnModel columnModel = attendanceTable.getColumnModel();
 
-		columnModel.getColumn(0).setPreferredWidth(170);// name
-		columnModel.getColumn(1).setPreferredWidth(100);// date
-		columnModel.getColumn(2).setPreferredWidth(100);// status
-		columnModel.getColumn(3).setPreferredWidth(100);// Time in
-		columnModel.getColumn(4).setPreferredWidth(150);// time in note
-		columnModel.getColumn(5).setPreferredWidth(100);// time out
-		columnModel.getColumn(6).setPreferredWidth(150);// time out note
-		columnModel.getColumn(7).setPreferredWidth(100);// overtime
-		columnModel.getColumn(8).setPreferredWidth(150);// worked hours
-		columnModel.getColumn(9).setPreferredWidth(150);// "Salary of That Day"
+		columnModel.getColumn(0).setPreferredWidth(170); // name
+		columnModel.getColumn(1).setPreferredWidth(100); // date
+		columnModel.getColumn(2).setPreferredWidth(100); // status
+		columnModel.getColumn(3).setPreferredWidth(100); // Time in
+		columnModel.getColumn(4).setPreferredWidth(150); // time in note
+		columnModel.getColumn(5).setPreferredWidth(100); // time out
+		columnModel.getColumn(6).setPreferredWidth(150); // time out note
+		columnModel.getColumn(7).setPreferredWidth(100); // overtime
+		columnModel.getColumn(8).setPreferredWidth(150); // worked hours
+		columnModel.getColumn(9).setPreferredWidth(150); // "Salary of That Day"
 
 		attendanceTable.setFont(new Font("Serif", Font.PLAIN, 18));
 		attendanceTable.setRowHeight(40);
 		JScrollPane scrollPane = new JScrollPane(attendanceTable);
 
-		JPanel panel = new JPanel(new MigLayout("wrap,fillx,insets 25 35 25 35", "[200px,center]", "[][]"));
+		JPanel panel = new JPanel(new MigLayout("wrap,fillx,insets 25 35 25 35", "[grow]", "[][grow][grow][]"));
 
 		JLabel lblNewLabel_1 = new JLabel("Attendance History");
 		lblNewLabel_1.setFont(new Font("SansSerif", Font.BOLD, 15));
 		panel.add(lblNewLabel_1, "cell 0 0,alignx left");
 		panel.add(scrollPane, "cell 0 1,grow");
+
+		JPanel panel_1 = new JPanel();
+		panel.add(panel_1, "cell 0 2,grow");
+		panel_1.setLayout(new MigLayout("", "[grow][]", "[][]"));
+
+		JLabel lblNewLabel_2 = new JLabel("Gross Pay: ");
+		panel_1.add(lblNewLabel_2, "cell 0 0,alignx right");
+
+		grossPayField = new JTextField();
+		panel_1.add(grossPayField, "cell 1 0,growx");
+		grossPayField.setColumns(10);
+
 		return panel;
+	}
+
+	private void refreshTable(DefaultTableModel modely) {
+		modely.setRowCount(0);
+		db.loadEMPAttendanceData(employee.getId(), modely);
+	}
+
+	private void updateGrossPayField() {
+		double grossPay = calculateGrossPayFrom1To15();
+		employee.setGrossPay(grossPay);
+
+		//only save if the table has 15 rows or 15 attendance records
+		if (attendanceModel.getRowCount() == 15) {
+			db.insertGrossPay(currentDate, employee.getGrossPay());
+		} 
+		grossPayField.setText(String.format("%.2f", grossPay));
+
 	}
 
 	private void setCurrentTimeToFields(JSpinner hourSpinner, JSpinner minuteSpinner) {

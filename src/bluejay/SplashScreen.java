@@ -16,7 +16,8 @@ import javax.swing.SwingConstants;
 import com.formdev.flatlaf.FlatClientProperties;
 
 public class SplashScreen extends JFrame {
-    private JLabel statusLabel;
+    private static final long serialVersionUID = 13123231231L;
+	private JLabel statusLabel;
     private JProgressBar progressBar;
     private JPanel bottomPanel;
 

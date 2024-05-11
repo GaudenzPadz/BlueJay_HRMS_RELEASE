@@ -46,7 +46,7 @@ import javax.swing.JSplitPane;
 
 public class PayrollPanel extends JPanel implements Printable {
 	private static final long serialVersionUID = 1L;
-	private JTextField tfEmployeeID, tfEmployeeName, tfEmployeeDepartment, tfEmployeeWorkType, tfRatePerDay,
+	private JTextField tfEmployeeID, tfEmployeeName, tfEmployeeDepartment, tfEmployeeWorkType, tfRatePerHour,
 			tfDaysWorked, tfOvertimeHours, tfGrossPay, tfOvertimeRate, tfDeductionsSSS, tfDeductionsPagIbig,
 			tfDeductionsPhilHealth, tfTotalDeductions, tfAdvanced, tfBonus, tfNetPay;
 	private JTable payrollHistoryTable;
@@ -61,7 +61,7 @@ public class PayrollPanel extends JPanel implements Printable {
 	private JComboBox<String> employmentTypeComboBox;
 	private JTextField wageField;
 	private JLabel GrossPayLabel;
-	private JLabel RatePerDayLabel;
+	private JLabel RatePerHourLabel;
 	private JLabel DaysWorkedLabel;
 	private JLabel RateLabel;
 	private JLabel OvertimeHoursLabel;
@@ -100,7 +100,7 @@ public class PayrollPanel extends JPanel implements Printable {
 		tfEmployeeName = new JTextField();
 		tfEmployeeDepartment = new JTextField();
 		tfEmployeeWorkType = new JTextField();
-		tfRatePerDay = new JTextField();
+		tfRatePerHour = new JTextField();
 		tfDaysWorked = new JTextField();
 		tfOvertimeHours = new JTextField();
 		tfGrossPay = new JTextField();
@@ -206,7 +206,7 @@ public class PayrollPanel extends JPanel implements Printable {
 					document.add(new Paragraph("Department: " + tfEmployeeDepartment.getText(), font));
 					document.add(new Paragraph("Work Type: " + tfEmployeeWorkType.getText(), font));
 					document.add(new Paragraph("Days Worked: " + tfDaysWorked.getText(), font));
-					document.add(new Paragraph("Rate Per Day: " + tfRatePerDay.getText(), font));
+					document.add(new Paragraph("Rate Per Hour: " + tfRatePerHour.getText(), font));
 					document.add(new Paragraph("Gross Pay: " + tfGrossPay.getText(), font));
 					document.add(new Paragraph("Net Pay: " + tfNetPay.getText(), font));
 					document.add(new Paragraph("Deductions: ", font));
@@ -312,10 +312,10 @@ public class PayrollPanel extends JPanel implements Printable {
 
 		fullTimePanel.add(tfGrossPay, "cell 1 1,growx");
 
-		RatePerDayLabel = new JLabel("Rate Per Day:");
-		fullTimePanel.add(RatePerDayLabel, "cell 0 2");
+		RatePerHourLabel = new JLabel("Rate Per Hour:");
+		fullTimePanel.add(RatePerHourLabel, "cell 0 2");
 
-		fullTimePanel.add(tfRatePerDay, "cell 1 2,growx");
+		fullTimePanel.add(tfRatePerHour, "cell 1 2,growx");
 
 		DaysWorkedLabel = new JLabel("Days Worked:");
 		fullTimePanel.add(DaysWorkedLabel, "cell 0 3");
@@ -512,7 +512,7 @@ public class PayrollPanel extends JPanel implements Printable {
 		String employeeName = tfEmployeeName.getText();
 		String employeeDepartment = tfEmployeeDepartment.getText();
 		String employeeWorkType = tfEmployeeWorkType.getText();
-		double ratePerDay = Double.parseDouble(tfRatePerDay.getText());
+		double ratePerHour = Double.parseDouble(tfRatePerHour.getText());
 		int daysWorked = Integer.parseInt(tfDaysWorked.getText());
 		double overtimeHours = Double.parseDouble(tfOvertimeHours.getText());
 		double advanced = Double.parseDouble(tfAdvanced.getText());
@@ -522,8 +522,8 @@ public class PayrollPanel extends JPanel implements Printable {
 		double sss = Double.parseDouble(tfDeductionsSSS.getText());
 		double pagIbig = Double.parseDouble(tfDeductionsPagIbig.getText());
 		double philHealth = Double.parseDouble(tfDeductionsPhilHealth.getText());
-		double basicSalary = ratePerDay * daysWorked;
-		double overTimePay = overtimeHours * ratePerDay; // Use the same rate per day
+		double basicSalary = ratePerHour * daysWorked;
+		double overTimePay = overtimeHours * ratePerHour; // Use the same rate per day
 		double grossPay = basicSalary + overTimePay + bonus;
 
 		double totalDeductions = sss + pagIbig + philHealth + advanced;
@@ -535,7 +535,7 @@ public class PayrollPanel extends JPanel implements Printable {
 		tfNetPay.setText(String.format("%.2f", netPay));
 
 		// Save the payroll record to the database
-		db.insertPayroll(employeeId, employeeName, employeeDepartment, employeeWorkType, grossPay, ratePerDay,
+		db.insertPayroll(employeeId, employeeName, employeeDepartment, employeeWorkType, grossPay, ratePerHour,
 				daysWorked, (int) overtimeHours, bonus, totalDeductions, netPay, new Date(System.currentTimeMillis())); // Use
 																														// the
 																														// current
@@ -558,7 +558,7 @@ public class PayrollPanel extends JPanel implements Printable {
 		tfEmployeeName.setText("");
 		tfEmployeeDepartment.setText("");
 		tfEmployeeWorkType.setText("");
-		tfRatePerDay.setText("");
+		tfRatePerHour.setText("");
 		tfDaysWorked.setText("");
 		tfOvertimeHours.setText("");
 		tfGrossPay.setText("");
@@ -597,7 +597,7 @@ public class PayrollPanel extends JPanel implements Printable {
 			tfEmployeeName.setText(selectedEmployee.getFirstName() + " " + selectedEmployee.getLastName());
 			tfEmployeeDepartment.setText(selectedEmployee.getDepartment());
 			tfEmployeeWorkType.setText(selectedEmployee.getWorkType());
-			tfRatePerDay.setText(String.valueOf(selectedEmployee.getRatePerDay()));
+			tfRatePerHour.setText(String.valueOf(selectedEmployee.getRatePerHour()));
 
 			loadDeductions();
 			updateSalaryPane(); // Refresh the salary panel to reflect the new selection
@@ -711,7 +711,7 @@ public class PayrollPanel extends JPanel implements Printable {
 		g2d.drawString("Department: " + tfEmployeeDepartment.getText(), x + 10, y + 100);
 		g2d.drawString("Work Type: " + tfEmployeeWorkType.getText(), x + 10, y + 115);
 		g2d.drawString("Days Worked: " + tfDaysWorked.getText(), x + 10, y + 130);
-		g2d.drawString("Daily Rate: " + tfRatePerDay.getText(), x + 10, y + 145);
+		g2d.drawString("Daily Rate: " + tfRatePerHour.getText(), x + 10, y + 145);
 		g2d.drawString("--------------------------------------", x + 10, y + 155);
 		g2d.drawString("Earnings:", x + 10, y + 165);
 		g2d.drawString("SSS: " + tfDeductionsSSS.getText(), x + 10, y + 180);

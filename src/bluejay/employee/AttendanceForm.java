@@ -17,7 +17,6 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -26,6 +25,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
@@ -38,7 +38,6 @@ import bluejay.Employee;
 import bluejay.Main;
 import bluejayDB.EmployeeDatabase;
 import net.miginfocom.swing.MigLayout;
-import javax.swing.JTextField;
 
 public class AttendanceForm extends JPanel {
 
@@ -94,16 +93,16 @@ public class AttendanceForm extends JPanel {
 	}
 
 	private void ifClockedIN() {
-		LocalDate lastDate = db.getLastClockInDate(employee.getId());
+		LocalDate lastDate = db.getLastClockInDate(employee.getEmployeeId());
 		LocalDate currentDate = LocalDate.now();
 
 		// Check for missing dates and mark them as absent
 		if (lastDate != null && !lastDate.isEqual(currentDate)) {
 			List<LocalDate> missingDates = getMissingDates(lastDate, currentDate);
-			markAbsentDays(missingDates, employee.getId(), name);
+			markAbsentDays(missingDates, employee.getEmployeeId(), name);
 		}
 
-		String attendanceStatus = db.checkAttendanceStatus(employee.getId(), name, currentDate.toString());
+		String attendanceStatus = db.checkAttendanceStatus(employee.getEmployeeId(), name, currentDate.toString());
 
 		FlatAnimatedLafChange.showSnapshot();
 		removeAll();
@@ -125,7 +124,7 @@ public class AttendanceForm extends JPanel {
 		FlatAnimatedLafChange.hideSnapshotWithAnimation();
 	}
 
-	private void markAbsentDays(List<LocalDate> missingDates, int employeeId, String employeeName) {
+	private void markAbsentDays(List<LocalDate> missingDates, String employeeId, String employeeName) {
 		for (LocalDate date : missingDates) {
 			db.insertAbsentRecordWithNoTime(employeeId, employeeName, date.toString());
 		}
@@ -258,7 +257,7 @@ public class AttendanceForm extends JPanel {
 			LocalDateTime dateTime = LocalDate.now(zoneId).atTime(hours, minutes);
 			long unixTimestamp = dateTime.atZone(zoneId).toEpochSecond();
 
-			db.addTimeIn(employee.getId(), name, employee.getEmploymentType(), "Active", currentDate, unixTimestamp,
+			db.addTimeIn(employee.getEmployeeId(), name, employee.getEmploymentType(), "Active", currentDate, unixTimestamp,
 					clockINnote.getText());
 
 			employee.setTimeIn(dateTime);
@@ -358,9 +357,9 @@ public class AttendanceForm extends JPanel {
 
 			// Calculate salary based on employment type
 			double ratePerHour = employee.getRatePerHour();
-			double salary = db.calculateSalaryByEmploymentType(employee.getId(), ratePerHour, workedHoursManual);
+			double salary = db.calculateSalaryByEmploymentType(employee, employee.getEmployeeId(), ratePerHour, workedHoursManual);
 
-			db.updateTimeOut(employee.getId(), LocalDate.now().toString(), unixTimestampOUT, "Shift Ended",
+			db.updateTimeOut(employee.getEmployeeId(), LocalDate.now().toString(), unixTimestampOUT, "Shift Ended",
 					clockOUTnote.getText(), overtimeHours, workedHoursManual, salary);
 			JOptionPane.showMessageDialog(this, "Time Out recorded. Total Worked Hours: " + workedHoursManual
 					+ ", Overtime Hours: " + overtimeHours + ", Salary: " + salary);
@@ -434,7 +433,7 @@ public class AttendanceForm extends JPanel {
 
 	private void refreshTable(DefaultTableModel modely) {
 		modely.setRowCount(0);
-		db.loadEMPAttendanceData(employee.getId(), modely);
+		db.loadEMPAttendanceData(employee.getEmployeeId(), modely);
 	}
 
 	private void updateGrossPayField() {
@@ -443,7 +442,8 @@ public class AttendanceForm extends JPanel {
 
 		//only save if the table has 15 rows or 15 attendance records
 		if (attendanceModel.getRowCount() == 15) {
-			db.insertGrossPay(currentDate, employee.getGrossPay());
+			db.insertGrossPay(currentDate, employee.getEmployeeId(), name, employee.getGrossPay());
+			// then reset the table
 		} 
 		grossPayField.setText(String.format("%.2f", grossPay));
 

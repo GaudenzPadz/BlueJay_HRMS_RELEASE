@@ -25,6 +25,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
@@ -38,11 +40,6 @@ import com.itextpdf.text.pdf.PdfWriter;
 import bluejay.Employee;
 import bluejayDB.EmployeeDatabase;
 import net.miginfocom.swing.MigLayout;
-import javax.swing.border.LineBorder;
-import java.awt.Color;
-import javax.swing.border.BevelBorder;
-import javax.swing.border.TitledBorder;
-import javax.swing.JSplitPane;
 
 public class PayrollPanel extends JPanel implements Printable {
 	private static final long serialVersionUID = 1L;
@@ -54,10 +51,12 @@ public class PayrollPanel extends JPanel implements Printable {
 	private List<Employee> employees;
 	private JTable EMPListTable;
 	private DefaultTableModel EMPListModel = new DefaultTableModel(
-			new String[] { "ID", "Name", "Department", "Employment Type", "Work Type", "Select"},
+			new String[] { "ID", "Name", "Department", "Employment Type", "Work Type", "Select" },
 			0);
-	private DefaultTableModel payrollHistoryTableModel = new DefaultTableModel(new String[] { "ID", "Name", "Department", "Work Type", "Gross Pay",
-				"Rate Pe rDay", "Days Worked", "Overtime Hours", "Bonus", "Total Deductions", "Net Pay" }, 0);
+	private DefaultTableModel payrollHistoryTableModel = new DefaultTableModel(
+			new String[] { "ID", "Name", "Department", "Work Type", "Gross Pay",
+					"Rate Pe rDay", "Days Worked", "Overtime Hours", "Bonus", "Total Deductions", "Net Pay" },
+			0);
 	private JComboBox<String> employmentTypeComboBox;
 	private JTextField wageField;
 	private JLabel GrossPayLabel;
@@ -150,7 +149,7 @@ public class PayrollPanel extends JPanel implements Printable {
 		EMPListModel.setRowCount(0); // Clear existing rows
 
 		for (Employee employee : employees) {
-			EMPListModel.addRow(new Object[] { employee.getId(), employee.getFirstName(), employee.getLastName(),
+			EMPListModel.addRow(new Object[] { employee.getEmployeeId(), employee.getFirstName(), employee.getLastName(),
 					employee.getDepartment(), employee.getWorkType(), "Select" });
 		}
 	}
@@ -229,7 +228,7 @@ public class PayrollPanel extends JPanel implements Printable {
 		payrollCalculationPanel.add(lblPayrollHistory, "cell 1 13 5 1");
 
 		// Table for payroll history
-		payrollHistoryTable = new JTable(EMPListModel);
+		payrollHistoryTable = new JTable(payrollHistoryTableModel);
 		JScrollPane scrollPane = new JScrollPane(payrollHistoryTable);
 		payrollCalculationPanel.add(scrollPane, "cell 0 14 11 1,grow");
 
@@ -272,9 +271,6 @@ public class PayrollPanel extends JPanel implements Printable {
 			salaryPane.add(new JLabel("Select an employee from the list."), BorderLayout.CENTER);
 			return salaryPane;
 		}
-
-		salaryPane.add(projectBasedPane(), BorderLayout.CENTER);
-
 		String employmentType = selectedEmployee.getEmploymentType();
 
 		switch (employmentType) {
@@ -593,14 +589,23 @@ public class PayrollPanel extends JPanel implements Printable {
 		private void selectEmployee(int row) {
 			selectedEmployee = employees.get(row);
 
-			tfEmployeeID.setText(String.valueOf(selectedEmployee.getId()));
+			tfEmployeeID.setText(String.valueOf(selectedEmployee.getEmployeeId()));
 			tfEmployeeName.setText(selectedEmployee.getFirstName() + " " + selectedEmployee.getLastName());
 			tfEmployeeDepartment.setText(selectedEmployee.getDepartment());
 			tfEmployeeWorkType.setText(selectedEmployee.getWorkType());
 			tfRatePerHour.setText(String.valueOf(selectedEmployee.getRatePerHour()));
 
+			// Set the employment type in the ComboBox
+			String employmentType = selectedEmployee.getEmploymentType();
+			for (int i = 0; i < employmentTypeComboBox.getItemCount(); i++) {
+				if (employmentTypeComboBox.getItemAt(i).equals(employmentType)) {
+					employmentTypeComboBox.setSelectedIndex(i);
+					break;
+				}
+			}
+
 			loadDeductions();
-			updateSalaryPane(); // Refresh the salary panel to reflect the new selection
+			updateSalaryPane(); // Update the salary panel based on the selected employee's employment type
 			revalidate();
 			repaint();
 		}
@@ -609,6 +614,7 @@ public class PayrollPanel extends JPanel implements Printable {
 	private void updateSalaryPane() {
 		// Assuming you have a reference to the panel that contains the salaryPane
 		salaryPanel.removeAll();
+		salaryPanel.setLayout(new MigLayout()); // Set MigLayout to the salaryPanel
 		salaryPanel.add(salaryPane(), "cell 4 2 2 9,grow");
 		salaryPanel.revalidate();
 		salaryPanel.repaint();
@@ -649,7 +655,7 @@ public class PayrollPanel extends JPanel implements Printable {
 			for (Employee employee : employees) {
 				if (employee.getFirstName().toLowerCase().contains(searchText)
 						|| employee.getLastName().toLowerCase().contains(searchText)) {
-					EMPListModel.addRow(new Object[] { employee.getId(), employee.getFirstName(),
+					EMPListModel.addRow(new Object[] { employee.getEmployeeId(), employee.getFirstName(),
 							employee.getLastName(), employee.getDepartment(), employee.getWorkType(), "Select" // The
 																												// "Select"
 																												// button

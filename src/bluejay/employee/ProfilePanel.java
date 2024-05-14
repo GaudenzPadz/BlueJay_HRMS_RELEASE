@@ -10,11 +10,8 @@ import java.awt.event.ActionListener;
 import java.sql.Date;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Period;
-import java.time.Year;
-import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Properties;
 
@@ -88,8 +85,18 @@ public class ProfilePanel extends JPanel {
 		btnNewButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				askToSaveChanges();
-				Main.frame.replaceContentPane("Weld Well HRMS", new EmployeePanel(employee, db), getLayout());
+				if (hasModifications()) {
+					int choice = JOptionPane.showConfirmDialog(null, "Do you want to save changes?", "Save Changes",
+							JOptionPane.YES_NO_CANCEL_OPTION);
+					if (choice == JOptionPane.YES_OPTION) {
+						updateData();
+						Main.frame.replaceContentPane("Weld Well HRMS", new EmployeePanel(employee, db), getLayout());
+					} else if (choice == JOptionPane.NO_OPTION) {
+						Main.frame.replaceContentPane("Weld Well HRMS", new EmployeePanel(employee, db), getLayout());
+					}
+				} else {
+					Main.frame.replaceContentPane("Weld Well HRMS", new EmployeePanel(employee, db), getLayout());
+				}
 			}
 		});
 
@@ -210,8 +217,13 @@ public class ProfilePanel extends JPanel {
 
 		JButton editProfileBtn = new JButton("Edit Profile");
 		editProfileBtn.addActionListener((ActionEvent e) -> {
-			askToSaveChanges();
-			setFieldsEditable(true);
+			if (hasModifications()) {
+				int choice = JOptionPane.showConfirmDialog(null, "Do you want to save changes?", "Save Changes",
+						JOptionPane.YES_NO_OPTION);
+				if (choice == JOptionPane.YES_OPTION) {
+					updateData();
+				}
+			}			setFieldsEditable(true);
 		});
 		panel.add(editProfileBtn, "flowx,cell 3 16,alignx left");
 
@@ -282,7 +294,7 @@ public class ProfilePanel extends JPanel {
 		setFieldsEditable(false);
 
 		// Populate the fields with the employee's data
-		IDField.setText(String.valueOf(employee.getId()));
+		IDField.setText(employee.getEmployeeId());
 		fNameField.setText(employee.getFirstName());
 		mNameField.setText(employee.getMiddleName());
 		lNameField.setText(employee.getLastName());
@@ -328,16 +340,6 @@ public class ProfilePanel extends JPanel {
 				!emailField.getText().equals(employee.getEmail()) ||
 				!contactNumField.getText().equals(employee.getContactNumber()) ||
 				!DOBField.getModel().getValue().equals(employee.getDOB());
-	}
-
-	private void askToSaveChanges() {
-		if (hasModifications()) {
-			int choice = JOptionPane.showConfirmDialog(null, "Do you want to save changes?", "Save Changes",
-					JOptionPane.YES_NO_OPTION);
-			if (choice == JOptionPane.YES_OPTION) {
-				updateData();
-			}
-		}
 	}
 
 	// Helper method to set all fields editable or not

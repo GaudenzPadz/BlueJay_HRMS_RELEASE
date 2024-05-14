@@ -8,7 +8,6 @@ import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,14 +50,15 @@ public class EMPListPanel extends JPanel {
 	private JPopupMenu popupMenu;
 	private JMenuItem menuItemRemove, menuItemEdit;
 	public final Map<String, String> workTypeMap = new HashMap<>();
-	private String[] column = { "ID", "First Name", "Last Name", "Address", "Department", "Employment Type", "Work Type", "Basic Salary" };
+	private String[] column = { "Employee ID", "First Name", "Last Name", "Address", "Department", "Employment Type",
+			"Work Type", "Basic Salary" };
 	private EmployeeDatabase db;
 	private DefaultTableModel model = new DefaultTableModel(column, 0) {
 		private static final long serialVersionUID = 4L;
 
 		@Override
 		public boolean isCellEditable(int rowIndex, int columnIndex) {
-			boolean[] columnEditables = new boolean[] { false, true, true, true, true, true, true };
+			boolean[] columnEditables = new boolean[] { false, true, true, true, true, true, true, false};
 			return columnEditables[columnIndex];
 		}
 	};
@@ -75,14 +75,15 @@ public class EMPListPanel extends JPanel {
 
 		TableColumnModel columnModel = table.getColumnModel();
 
-		columnModel.getColumn(0).setPreferredWidth(50);
+		columnModel.getColumn(0).setPreferredWidth(150);
 		columnModel.getColumn(0).setResizable(false);
 		columnModel.getColumn(1).setPreferredWidth(100);
 		columnModel.getColumn(2).setPreferredWidth(100);
 		columnModel.getColumn(3).setPreferredWidth(200);
 		columnModel.getColumn(4).setPreferredWidth(200);
 		columnModel.getColumn(5).setPreferredWidth(230);
-		columnModel.getColumn(6).setPreferredWidth(100);
+		columnModel.getColumn(6).setPreferredWidth(200);
+		columnModel.getColumn(7).setPreferredWidth(100);
 
 		table.setToolTipText("Right Click For Options"); // floating text on the table
 		table.setCellSelectionEnabled(true);
@@ -223,7 +224,7 @@ public class EMPListPanel extends JPanel {
 		}
 
 		// Retrieve updated information from the table
-		int employeeId = (int) table.getValueAt(selectedRow, 0);
+		String employeeId = (String) table.getValueAt(selectedRow, 0);
 		String updatedFirstName = (String) table.getValueAt(selectedRow, 1);
 		String updatedLastName = (String) table.getValueAt(selectedRow, 2);
 		String updatedAddress = (String) table.getValueAt(selectedRow, 3);
@@ -298,26 +299,24 @@ public class EMPListPanel extends JPanel {
 		}
 
 		// Retrieve employee ID from the table
-		int employeeId = (int) table.getValueAt(selectedRow, 0);
+		String employeeId = table.getValueAt(selectedRow, 0).toString();
 
 		try {
 			// Fetch complete Employee object from the database
-
 			Employee employee = db.getEmployeeById(employeeId);
 			if (employee == null) {
 				JOptionPane.showMessageDialog(null, "Employee not found.", "Error", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
 
-			// Display the EmployeeEditWindow
+			// Display the EmployeeEditWindowb
 			JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(EMPListPanel.this);
 			EmployeeEditWindow editWindow = new EmployeeEditWindow(parentFrame, employee, db);
 			editWindow.setVisible(true);
 		} catch (Exception e) {
-			JOptionPane.showMessageDialog(null, "Failed to retrieve employee data: " + e.getMessage(),
-					"Database Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(null, "Failed to retrieve employee data: " + e.getMessage(), "Database Error",
+					JOptionPane.ERROR_MESSAGE);
 		}
-
 	}
 
 	private void refreshTable() {
@@ -332,9 +331,10 @@ public class EMPListPanel extends JPanel {
 			protected Void doInBackground() throws Exception {
 				try (ResultSet rs = db.getAllData()) {
 					while (rs.next()) {
-						publish(new Object[] { rs.getInt("id"), rs.getString("first_name"), rs.getString("last_name"),
-								rs.getString("address"), rs.getString("department"), rs.getString("employment_type"),
-								rs.getString("work_type"), rs.getDouble("rate") });
+						publish(new Object[] { 
+								rs.getString("employee_id"), rs.getString("first_name"),
+								rs.getString("last_name"), rs.getString("address"), rs.getString("department"),
+								rs.getString("employment_type"), rs.getString(	"work_type"), rs.getDouble("rate") });
 					}
 				}
 				return null;

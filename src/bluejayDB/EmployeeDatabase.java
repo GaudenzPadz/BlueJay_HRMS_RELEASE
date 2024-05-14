@@ -81,19 +81,19 @@ public class EmployeeDatabase {
 	public Employee getEmployeeDataByUsername(String username) {
 		try {
 			String query = "SELECT e.*, d.department_name, t.work_type, et.type as employment_type "
-			+ "FROM employees e "
-			+ "LEFT JOIN types t ON e.work_type_id = t.id "
-			+ "LEFT JOIN department d ON e.department_id = d.department_id "
-			+ "LEFT JOIN employment_type et ON e.employment_type_id = et.id "
-			+ "WHERE e.employee_id = (SELECT employee_ID FROM users WHERE username = ?)";
-  
+					+ "FROM employees e "
+					+ "LEFT JOIN types t ON e.work_type_id = t.id "
+					+ "LEFT JOIN department d ON e.department_id = d.department_id "
+					+ "LEFT JOIN employment_type et ON e.employment_type_id = et.id "
+					+ "WHERE e.employee_id = (SELECT employee_ID FROM users WHERE username = ?)";
+
 			PreparedStatement statement = connection.prepareStatement(query);
 			statement.setString(1, username);
 			ResultSet rs = statement.executeQuery();
 
 			if (rs.next()) {
 				Employee employee = new Employee();
-				employee.setId(rs.getInt("id"));
+				employee.setId(rs.getString("employee_id"));
 				employee.setFirstName(rs.getString("first_name"));
 				employee.setMiddleName(rs.getString("middle_name"));
 				employee.setLastName(rs.getString("last_name"));
@@ -147,7 +147,7 @@ public class EmployeeDatabase {
 
 			while (rs.next()) {
 				Employee employee = new Employee();
-				employee.setId(rs.getInt("id"));
+				employee.setId(rs.getString("employee_id"));
 				employee.setFirstName(rs.getString("first_name"));
 				employee.setMiddleName(rs.getString("middle_name"));
 				employee.setLastName(rs.getString("last_name"));
@@ -220,7 +220,7 @@ public class EmployeeDatabase {
 		if (connection == null) {
 			throw new SQLException("Connection is null. Make sure to establish the connection.");
 		}
-		String query = "SELECT e.id, e.first_name, e.last_name, e.address, d.department_name AS department, "
+		String query = "SELECT e.id , e.employee_id, e.first_name, e.last_name, e.address, d.department_name AS department, "
 				+ "t.work_type, et.type AS employment_type, e.rate, e.grossPay, e.netPay " + "FROM employees e "
 				+ "LEFT JOIN types t ON e.work_type_id = t.id "
 				+ "LEFT JOIN department d ON e.department_id = d.department_id "
@@ -368,7 +368,24 @@ public class EmployeeDatabase {
 
 	}
 
-	public void insertEMPData(int newId, String first_name, String last_name, String address, int workTypeId,
+	public String getAbbreviationForWorkType(String workType) throws SQLException {
+		String sql = "SELECT abbreviation FROM types WHERE work_type = ?";
+		try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+			pstmt.setString(1, workType);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				if (rs.next()) {
+					return rs.getString("abbreviation");
+				} else {
+					throw new SQLException("No abbreviation found for the specified work type.");
+				}
+			}
+		} catch (SQLException e) {
+			System.err.println("SQL error: " + e.getMessage());
+			throw e; // Rethrow the exception to handle it in the calling method
+		}
+	}
+
+	public void insertEMPData(String newId, String first_name, String last_name, String address, int workTypeId,
 			double rate,
 			String gender, String telNum, java.sql.Date DOB, String email, byte[] imageData, int departmentId,
 			int employmentTypeId,
@@ -379,7 +396,7 @@ public class EmployeeDatabase {
 					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			PreparedStatement statement = connection.prepareStatement(sql);
 
-			statement.setInt(1, newId);
+			statement.setString(1, newId);
 			statement.setString(2, first_name);
 			statement.setString(3, last_name);
 			statement.setString(4, address);
@@ -409,12 +426,24 @@ public class EmployeeDatabase {
 		}
 	}
 
-	public void insertEMPCredentials(int employee_ID, String name, String username, String passw, String role) {
+	public boolean checkEmployeeIdExists(String id) throws SQLException {
+		String sql = "SELECT COUNT(*) FROM employees WHERE employee_id = ?";
+		try (PreparedStatement statement = connection.prepareStatement(sql)) {
+			statement.setString(1, id);
+			ResultSet rs = statement.executeQuery();
+			if (rs.next()) {
+				return rs.getInt(1) > 0;
+			}
+			return false;
+		}
+	}
+
+	public void insertEMPCredentials(String employee_ID, String name, String username, String passw, String role) {
 		try {
 			PreparedStatement statement = connection
 					.prepareStatement(
 							"INSERT INTO users (employee_ID, name, username, password, role) VALUES (?,?,?,?,?)");
-			statement.setInt(1, employee_ID);
+			statement.setString(1, employee_ID);
 			statement.setString(2, name);
 			statement.setString(3, username);
 			statement.setString(4, passw);
@@ -472,20 +501,20 @@ public class EmployeeDatabase {
 		}
 	}
 
-	public Employee getEmployeeById(int id) {
+	public Employee getEmployeeById(String employee_id) {
 		String sql = "SELECT e.*, d.department_name, t.work_type, et.type as employment_type "
 				+ "FROM employees e "
 				+ "LEFT JOIN department d ON e.department_id = d.department_id "
 				+ "LEFT JOIN types t ON e.work_type_id = t.id "
 				+ "LEFT JOIN employment_type et ON e.employment_type_id = et.id " // Corrected JOIN clause
-				+ "WHERE e.id = ?";
+				+ "WHERE e.employee_id = ?";
 		try (PreparedStatement statement = connection.prepareStatement(sql)) {
-			statement.setInt(1, id);
+			statement.setString(1, employee_id);
 			ResultSet rs = statement.executeQuery();
 
 			if (rs.next()) {
 				Employee employee = new Employee();
-				employee.setId(rs.getInt("id"));
+				employee.setId(rs.getString("employee_id"));
 				employee.setFirstName(rs.getString("first_name"));
 				employee.setMiddleName(rs.getString("middle_name"));
 				employee.setLastName(rs.getString("last_name"));
@@ -568,7 +597,7 @@ public class EmployeeDatabase {
 			statement.setLong(16, employee.getDOB().toLocalDate().atStartOfDay().atZone(ZoneId.systemDefault())
 					.toInstant().getEpochSecond());
 
-			statement.setInt(17, employee.getId());
+			statement.setString(17, employee.getEmployeeId());
 			statement.executeUpdate();
 			System.out.println("Record updated.");
 		} catch (SQLException e) {
@@ -579,11 +608,11 @@ public class EmployeeDatabase {
 
 	// attendance DB methods
 
-	public String checkAttendanceStatus(int employeeId, String employeeName, String date) {
+	public String checkAttendanceStatus(String employeeId, String employeeName, String date) {
 		String query = "SELECT time_in, time_out FROM attendance WHERE employee_id = ? AND name = ? AND date = ?";
 
 		try (PreparedStatement stmt = connection.prepareStatement(query)) {
-			stmt.setInt(1, employeeId);
+			stmt.setString(1, employeeId);
 			stmt.setString(2, employeeName);
 			stmt.setString(3, date);
 
@@ -605,10 +634,10 @@ public class EmployeeDatabase {
 		return "noTimeIn";
 	}
 
-	public void insertAbsentRecordWithNoTime(int employeeId, String name, String date) {
+	public void insertAbsentRecordWithNoTime(String employeeId, String name, String date) {
 		String query = "INSERT INTO attendance (employee_id, name, date, status, time_in, time_out) VALUES (?, ?, ?, 'Absent', NULL, NULL)";
 		try (PreparedStatement stmt = connection.prepareStatement(query)) {
-			stmt.setInt(1, employeeId);
+			stmt.setString(1, employeeId);
 			stmt.setString(2, name);
 			stmt.setString(3, date);
 			stmt.executeUpdate();
@@ -617,12 +646,12 @@ public class EmployeeDatabase {
 		}
 	}
 
-	public void addTimeIn(int employeeId, String name, String work_type, String status, String date, Long timeIn,
+	public void addTimeIn(String employeeId, String name, String work_type, String status, String date, Long timeIn,
 			String note) {
 		try {
 			String query = "INSERT INTO attendance (employee_id, name, work_type, status, date, time_in, time_out, clock_IN_Note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 			PreparedStatement stmt = connection.prepareStatement(query);
-			stmt.setInt(1, employeeId);
+			stmt.setString(1, employeeId);
 			stmt.setString(2, name);
 			stmt.setString(3, work_type);
 			stmt.setString(4, status);
@@ -637,7 +666,7 @@ public class EmployeeDatabase {
 		}
 	}
 
-	public void updateTimeOut(int employeeId, String date, Long timeOut, String status, String clockOUTnote,
+	public void updateTimeOut(String employeeId, String date, Long timeOut, String status, String clockOUTnote,
 			int overtime, int workedHours, double date_salary) {
 		try {
 			String query = "UPDATE attendance SET time_out = ?, status = ?, clock_OUT_Note = ?, overtime = ?, workedHours = ?, date_salary = ? WHERE employee_id = ? AND date = ?";
@@ -648,7 +677,7 @@ public class EmployeeDatabase {
 			stmt.setInt(4, overtime);
 			stmt.setInt(5, workedHours);
 			stmt.setDouble(6, date_salary);
-			stmt.setInt(7, employeeId);
+			stmt.setString(7, employeeId);
 			stmt.setString(8, date);
 			stmt.executeUpdate();
 			stmt.close();
@@ -688,19 +717,23 @@ public class EmployeeDatabase {
 		return new int[] { 0, 0 };
 	}
 
-	public double calculateSalaryByEmploymentType(int employeeId, double ratePerHour, int hoursWorked) {
-		Employee employee = getEmployeeById(employeeId); // Assume this method exists and fetches employee data
-		String employmentType = getEmploymentType(employeeId);
+	public double calculateSalaryByEmploymentType(Employee emp, String employeeId, double ratePerHour, int hoursWorked) {
+		if (emp == null) {
+			throw new IllegalArgumentException("No employee found with ID: " + employeeId);
+		}
+		String employmentType = emp.getEmploymentType();
+		if (employmentType == null) {
+			throw new IllegalArgumentException("Employment type is not set for employee ID: " + employeeId);
+		}
 		double salary = 0.0;
-
+	
 		switch (employmentType) {
 			case "Full Time":
-				salary = employee.calculateFullTime(ratePerHour, hoursWorked);
+				salary = emp.calculateFullTime(ratePerHour, hoursWorked);
 				break;
 			case "Part Time":
-				// Adjust hours for part-time (5 hours shift only)
 				hoursWorked = Math.min(hoursWorked, 5);
-				salary = employee.calculatePartTime(ratePerHour, hoursWorked);
+				salary = emp.calculatePartTime(ratePerHour, hoursWorked);
 				break;
 			case "Project Based":
 				// Implementation to be added later
@@ -714,11 +747,11 @@ public class EmployeeDatabase {
 
 	DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
 
-	public void loadEMPAttendanceData(int employeeId, DefaultTableModel model) {
+	public void loadEMPAttendanceData(String employeeId, DefaultTableModel model) {
 		try {
 			String query = "SELECT * FROM attendance WHERE employee_id = ?";
 			PreparedStatement stmt = connection.prepareStatement(query);
-			stmt.setInt(1, employeeId);
+			stmt.setString(1, employeeId);
 			ResultSet rs = stmt.executeQuery();
 
 			// Clear existing rows
@@ -809,10 +842,10 @@ public class EmployeeDatabase {
 		}
 	}
 
-	public LocalDate getLastClockInDate(int employeeId) {
+	public LocalDate getLastClockInDate(String employeeId) {
 		String query = "SELECT MAX(date) AS last_date FROM attendance WHERE employee_id = ? AND time_in IS NOT NULL";
 		try (PreparedStatement stmt = connection.prepareStatement(query)) {
-			stmt.setInt(1, employeeId);
+			stmt.setString(1, employeeId);
 			ResultSet rs = stmt.executeQuery();
 			if (rs.next()) {
 				String lastDateStr = rs.getString("last_date");
@@ -866,25 +899,29 @@ public class EmployeeDatabase {
 	}
 
 	// payroll DB methods
-	public void insertGrossPay(String date_created, double grossPay) {
-		//CREATE TABLE "grossPayTable" (	"id"	INTEGER,	"date_created"	TEXT,	"grossPay"	INTEGER,	PRIMARY KEY("id")	);
-		String sql = "INSERT INTO grossPayTable (date_created = ?, grossPay = ?)";
+	public void insertGrossPay(String date_created, String id, String name, double grossPay) {
+		// CREATE TABLE "grossPayTable" ( "id" INTEGER, "date_created" TEXT,
+		// "employee_id" TEXT, "name" TEXT, "grossPay" INTEGER, PRIMARY KEY("id") );
+		String sql = "INSERT INTO grossPayTable (date_created = ?, employee_id = ?, name = ?, grossPay = ?)";
 		try (PreparedStatement statement = connection.prepareStatement(sql)) {
 			statement.setString(1, date_created);
-			statement.setDouble(2, grossPay);
+			statement.setString(2, id);
+			statement.setString(3, name);
+			statement.setDouble(4, grossPay);
 			statement.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public ResultSet loadGrossPayFrom15th() {
 		String sql = "SELECT * FROM grossPayTable";
 		try (PreparedStatement stmt = connection.prepareStatement(sql)) {
 			ResultSet rs = stmt.executeQuery();
 			return rs;
- 		} catch (SQLException e) {
-			JOptionPane.showMessageDialog(null, "Error loading gross pay data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+		} catch (SQLException e) {
+			JOptionPane.showMessageDialog(null, "Error loading gross pay data: " + e.getMessage(), "Error",
+					JOptionPane.ERROR_MESSAGE);
 		}
 		return null;
 	}
@@ -970,7 +1007,7 @@ public class EmployeeDatabase {
 		try {
 			String sql = "SELECT * FROM payroll WHERE employee_id = ?"; // SQL query to fetch payroll data
 			PreparedStatement statement = connection.prepareStatement(sql); // Prepare the SQL statement
-			statement.setInt(1, currentEmployee.getId()); // Set the employee ID parameter
+			statement.setString(1, currentEmployee.getEmployeeId()); // Set the employee ID parameter
 
 			ResultSet resultSet = statement.executeQuery(); // Execute the query
 

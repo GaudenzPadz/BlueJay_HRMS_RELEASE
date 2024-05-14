@@ -11,7 +11,7 @@ import javax.swing.ImageIcon;
 
 public class Employee {
 
-	private int id;
+	private String employee_id;
 	private String firstName;
 	private String middleName;
 	private String lastName;
@@ -40,12 +40,13 @@ public class Employee {
 	private String created_at;
 	private String EmploymentType;
 	private int hoursWorked;
-    private int overtimeHours;
-	public Employee(int id, String firstName, String middleName, String lastName, String address, String department,
+	private int overtimeHours;
+
+	public Employee(String id, String firstName, String middleName, String lastName, String address, String department,
 			String EmploymentType, String workType, double ratePerHour, double grossPay,
 			double netPay, String gender) {
 		// Initialize
-		this.id = id;
+		this.employee_id = id;
 		this.firstName = firstName;
 		this.middleName = middleName;
 		this.lastName = lastName;
@@ -64,10 +65,10 @@ public class Employee {
 		this.overtime = 0.0;
 	}
 
-	public Employee(int employeeId, String updatedFirstName, String updatedLastName, String updatedAddress,
+	public Employee(String employeeId, String updatedFirstName, String updatedLastName, String updatedAddress,
 			String updatedDepartment, String updatedWorkType, double updatedRate) {
 		// Initialize
-		this.id = employeeId;
+		this.employee_id = employeeId;
 		this.firstName = updatedFirstName;
 		this.lastName = updatedLastName;
 		this.address = updatedAddress;
@@ -81,13 +82,14 @@ public class Employee {
 	}
 
 	// GETTERS
-	public int getId(){
-		return id;
+	public String getEmployeeId() {
+		return employee_id;
 	}
 
-    public int getovertimeHours(){
+	public int getovertimeHours() {
 		return overtimeHours;
 	}
+
 	public String getDepartment() {
 
 		return department;
@@ -121,7 +123,6 @@ public class Employee {
 	public double getRatePerHour() {
 		return ratePerHour;
 	}
-
 
 	public String getGender() {
 		return gender;
@@ -183,7 +184,6 @@ public class Employee {
 		return dateHired;
 	}
 
-
 	public ImageIcon getProfileImage() {
 		return profileImage;
 	}
@@ -209,16 +209,18 @@ public class Employee {
 	}
 
 	// SETTERS
-	public void setId(int id) {
-		this.id = id;
+	public void setId(String employeeId) {
+		this.employee_id = employeeId;
 	}
 
-public void setoOvertimeHours(int overtimeHours){
-	this.overtimeHours =overtimeHours;
-}
-public void setHoursWorked(int hoursWorked) {
+	public void setoOvertimeHours(int overtimeHours) {
+		this.overtimeHours = overtimeHours;
+	}
+
+	public void setHoursWorked(int hoursWorked) {
 		this.hoursWorked = hoursWorked;
 	}
+
 	public void setFirstName(String firstName) {
 		this.firstName = firstName;
 	}
@@ -322,23 +324,24 @@ public void setHoursWorked(int hoursWorked) {
 		setGrossPay(grossPay);
 		return grossPay;
 	}
-	
+    // CALCULATION OF PART TIME
 	public double calculatePartTime(double basicSalary, int hoursWorked) {
-		double partTimeGrossPay = basicSalary * hoursWorked / 2;
+		double partTimeGrossPay = ratePerHour * hoursWorked / 2;
 		setGrossPay(partTimeGrossPay);
 		return partTimeGrossPay;
 	}
 
-	//CALCULATION OF PROJECT BASED
-	public double calculateProjectBased(double ratePerHour, int projectCompleted){
+	// CALCULATION OF PROJECT BASED
+	public double calculateProjectBased(double ratePerHour, int projectCompleted) {
 		double grossPay = ratePerHour * projectCompleted;
 		setGrossPay(grossPay);
 		return grossPay;
 	}
-	
-	public double calculate15thGrossPay(){
+
+	public double calculate15thGrossPay() {
 		return 0;
 	}
+
 	public double totalDeductions() {
 		return getPAG_IBIG() + getPHILHEALTH() + getSSS();
 	}

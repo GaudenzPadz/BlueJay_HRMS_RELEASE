@@ -64,7 +64,6 @@ public class AddEMPPanel extends JPanel {
 	private JPasswordField passwordField;
 	private JSeparator separator;
 	private JButton btnNewButton;
-	private JTextField textField_4;
 	private JRadioButton radioMale, radioFemale;
 
 	private JPanel panel;
@@ -74,7 +73,7 @@ public class AddEMPPanel extends JPanel {
 	private JLabel lblNewLabel_1;
 	private JButton uploadBtn;
 	private ImageIcon imageIcon; // Store the uploaded image here
-	private int newId;
+	private String newId;
 	private JTextField wageField; // Field to display the wage
 	private JComboBox<String> workTypeCombobox;
 	private Map<String, Integer> workTypeWageMap; // Store work type to wage mapping
@@ -87,14 +86,14 @@ public class AddEMPPanel extends JPanel {
 	protected JLabel imageLabel;
 	private JComboBox<String> employmentTypeComboBox;
 	private JLabel lblNewLabel_8;
+	private JTextField idField; // Renamed and modified field
 
 	public AddEMPPanel(EmployeeDatabase DB) {
 		this.db = DB;
 
 		setLayout(new MigLayout("center", "[center]", "[center]"));
 
-		panel = new JPanel(new MigLayout("wrap,fillx,insets 35 45 30 45", "[pref!,grow,fill]",
-				"[][][grow][][][][][][][][][][][][][][][][][][][][][][][][][][][]"));
+		panel = new JPanel(new MigLayout("wrap,fillx,insets 35 45 30 45", "[pref!,grow,fill]", "[][][grow][][][][][][][][][][][][][][][][][][][][][][][][][][][][]"));
 		sp = new JScrollPane(panel);
 		sp.putClientProperty(FlatClientProperties.STYLE,
 				"arc:20;" + "[light]background:darken(@background,3%);" + "[dark]background:lighten(@background,3%)");
@@ -146,9 +145,6 @@ public class AddEMPPanel extends JPanel {
 		workTypeField = new JTextField(6);
 		workTypeField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter Work Type");
 		workTypeField.setEnabled(false);
-		JLabel label = new JLabel("Address");
-		addressField = new JTextField();
-		addressField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter Address");
 		JLabel lblNewLabel_2 = new JLabel("Gender");
 
 		JPanel genderPanel = new JPanel(new MigLayout("insets 0"));
@@ -262,31 +258,34 @@ public class AddEMPPanel extends JPanel {
 		panel.add(lblRate, "cell 0 9");
 
 		panel.add(wageField, "cell 0 10,growx");
+		
+				JLabel lblNewLabel_7 = new JLabel("Employee's ID:");
+				panel.add(lblNewLabel_7, "flowx,cell 0 11,alignx center");
+		JLabel label = new JLabel("Address");
+		
+				panel.add(label, "flowx,cell 0 13");
+		addressField = new JTextField();
+		addressField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter Address");
+		
+				panel.add(addressField, "cell 0 14,growx");
 
-		panel.add(label, "cell 0 11");
+		panel.add(lblNewLabel_2, "cell 0 15,gapy 5");
 
-		panel.add(addressField, "cell 0 12,growx");
+		panel.add(genderPanel, "cell 0 16");
 
-		JLabel lblNewLabel_7 = new JLabel("Employee's ID:");
-		panel.add(lblNewLabel_7, "flowx,cell 0 13");
+		panel.add(lblNewLabel_3, "cell 0 17");
 
-		panel.add(lblNewLabel_2, "cell 0 14,gapy 5");
-
-		panel.add(genderPanel, "cell 0 15");
-
-		panel.add(lblNewLabel_3, "cell 0 16");
-
-		panel.add(contactField, "flowx,cell 0 17,growx");
+		panel.add(contactField, "flowx,cell 0 18,growx");
 		JLabel lblNewLabel_4 = new JLabel("Email");
 
-		panel.add(lblNewLabel_4, "cell 0 18");
+		panel.add(lblNewLabel_4, "cell 0 19");
 		emailField = new JTextField(10);
 		emailField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter email");
 
-		panel.add(emailField, "cell 0 19,growx");
+		panel.add(emailField, "cell 0 20,growx");
 
 		JLabel lblNewLabel_6 = new JLabel("Date of Birth");
-		panel.add(lblNewLabel_6, "cell 0 20");
+		panel.add(lblNewLabel_6, "cell 0 21");
 
 		// Initialize the date picker for Date of Birth
 		SqlDateModel model = new SqlDateModel();
@@ -314,49 +313,86 @@ public class AddEMPPanel extends JPanel {
 			}
 		};
 		DOBField = new JDatePickerImpl(datePanel, DateLabelFormatter);
-		panel.add(DOBField, "cell 0 21,growx");
+		panel.add(DOBField, "cell 0 22,growx");
 
-		panel.add(new JSeparator(), "cell 0 22,gapy 5 5");
+		panel.add(new JSeparator(), "cell 0 23,gapy 5 5");
 
 		JLabel lblNewLabel = new JLabel("Username");
-		panel.add(lblNewLabel, "cell 0 23");
+		panel.add(lblNewLabel, "cell 0 24");
 
 		usernameField = new JTextField(10);
 		usernameField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter username");
-		panel.add(usernameField, "cell 0 24,growx");
+		panel.add(usernameField, "cell 0 25,growx");
 
 		JLabel lblNewLabel_5 = new JLabel("Password");
-		panel.add(lblNewLabel_5, "cell 0 25");
+		panel.add(lblNewLabel_5, "cell 0 26");
 
 		passwordField = new JPasswordField();
 		passwordField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter password");
 
-		panel.add(passwordField, "cell 0 26,growx");
+		panel.add(passwordField, "cell 0 27,growx");
 		passwordField.setColumns(10);
 
 		separator = new JSeparator();
-		panel.add(separator, "cell 0 27,growx");
+		panel.add(separator, "cell 0 28,growx");
 
 		btnNewButton = new JButton("Add Employee");
 		btnNewButton.addActionListener((ActionEvent e) -> {
 			saveEmployeeToDatabase();
 		});
-		panel.add(btnNewButton, "cell 0 28");
+		panel.add(btnNewButton, "cell 0 29");
+		idField = new JTextField();
+		idField.setEnabled(false); // Initially disabled
+		panel.add(idField, "cell 0 11,alignx center");
+		idField.setColumns(10);
 
-		textField_4 = new JTextField();
-		try {
-			newId = db.getLastEmployeeId() + 1;
-			textField_4.setText(String.valueOf(newId)); // Convert int to String
-		} catch (SQLException e) {
-			// Handle SQLException here
-			// e.printStackTrace(); // For debugging
-			JOptionPane.showMessageDialog(null, "An error occurred while retrieving employee ID.");
+		// Add action listeners to enable ID generation when both fields are selected
+		workTypeCombobox.addActionListener((ActionEvent e) -> {
+			if (workTypeCombobox.getSelectedItem() != null && employmentTypeComboBox.getSelectedItem() != null) {
+				generateEmployeeId();
+			}
+		});
+
+		employmentTypeComboBox.addActionListener((ActionEvent e) -> {
+			if (workTypeCombobox.getSelectedItem() != null && employmentTypeComboBox.getSelectedItem() != null) {
+				generateEmployeeId();
+			}
+		});
+	}
+
+	private void generateEmployeeId() {
+		if (workTypeCombobox.getSelectedItem() == null || employmentTypeComboBox.getSelectedItem() == null) {
+			idField.setText("");
+			return; // Do not generate ID if either field is not selected
 		}
-
-		textField_4.setEditable(true);
-		panel.add(textField_4, "cell 0 13");
-		textField_4.setColumns(10);
-
+	
+		try {
+			String workType = (String) workTypeCombobox.getSelectedItem();
+			String employmentType = (String) employmentTypeComboBox.getSelectedItem();
+			String abbreviation = db.getAbbreviationForWorkType(workType); // Method to fetch abbreviation
+	
+			String typeCode = "";
+			if ("Full Time".equals(employmentType)) {
+				typeCode = "F";
+			} else if ("Part Time".equals(employmentType)) {
+				typeCode = "P";
+			} else if ("Project Based".equals(employmentType)) {
+				typeCode = "PB";
+			}
+	
+			int lastId = db.getLastEmployeeId() + 1; // Increment last ID to ensure uniqueness
+			newId = abbreviation + String.format("%03d", lastId) + typeCode; // Formats ID with leading zeros
+	
+			while (db.checkEmployeeIdExists(newId)) { // Check if the ID already exists
+				lastId++; // Increment the ID if it exists
+				newId = abbreviation + String.format("%03d", lastId) + typeCode;
+			}
+	
+			idField.setText(newId); // Set the new ID in the text field
+			idField.setEnabled(true); // Enable the ID field after generation
+		} catch (SQLException e) {
+			JOptionPane.showMessageDialog(null, "An error occurred while generating employee ID.");
+		}
 	}
 
 	private void populateDepartmentComboBox() {

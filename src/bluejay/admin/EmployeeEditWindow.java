@@ -66,7 +66,7 @@ class EmployeeEditWindow extends JDialog {
 
 	public EmployeeEditWindow(JFrame parent, Employee employee, EmployeeDatabase db) {
 		super(parent, true);
-		setSize(600, 580);
+		setSize(740, 611);
 		setUndecorated(true); // Remove title bar and border
 		setLocationRelativeTo(parent);
 		getContentPane().setLayout(new MigLayout("wrap, fillx, insets 25 35 20 35", "[170px,grow]", "[]"));

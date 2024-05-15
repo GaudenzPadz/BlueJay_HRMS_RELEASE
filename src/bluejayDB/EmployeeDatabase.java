@@ -392,7 +392,41 @@ public class EmployeeDatabase {
 			java.sql.Date date_hired, double grossPay, double netPay) {
 
 		try {
-			String sql = "INSERT INTO employees (employee_id, first_name, last_name, address, work_type_id, rate, grossPay, netPay, gender, tel_number, DOB, email, profile_image, department_id, id, date_hired) "
+		// 	"id"	INTEGER,
+		// 	"employee_id"	TEXT,
+		// 	"first_name"	TEXT,
+		// 	"middle_name"	TEXT,
+		// 	"last_name"	TEXT,
+		// 	"address"	TEXT,
+		// 	"department_id"	INTEGER,
+		// 	"employment_type_id"	INTEGER,
+		// 	"work_type_id"	INTEGER,
+		// 	"rate"	INTEGER,
+		// 	"grossPay"	INTEGER,
+		// 	"netPay"	INTEGER,
+		// 	"gender"	TEXT,
+		// 	"tel_number"	TEXT,
+		// 	"email"	TEXT,
+		// 	"profile_image"	BLOB,
+		// 	"date_hired"	INTEGER,
+		// 	"DOB"	INTEGER,
+			String sql = "INSERT INTO employees "
+					+ "(employee_id, "//1
+					+ "first_name, "//2
+					+ "last_name, "//3
+					+ "address, "//4
+					+ "department_id, "//5
+					+ "employment_type_id, "//6
+					+ "work_type_id, "//7
+					+ "rate, "//8
+					+ "grossPay, "//9
+					+ "netPay, "//10
+					+ "gender, "//11
+					+ "tel_number, "//12
+					+ "email, "//13
+					+ "DOB, "//14
+					+ "profile_image, "//15
+					+ "date_hired) "//16
 					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			PreparedStatement statement = connection.prepareStatement(sql);
 
@@ -400,23 +434,24 @@ public class EmployeeDatabase {
 			statement.setString(2, first_name);
 			statement.setString(3, last_name);
 			statement.setString(4, address);
-			statement.setInt(5, workTypeId);
-			statement.setDouble(6, rate);
-			statement.setDouble(7, grossPay);
-			statement.setDouble(8, netPay);
-			statement.setString(9, gender);
-			statement.setString(10, telNum);
 
+			statement.setInt(5, departmentId);
+			statement.setInt(6, employmentTypeId);
+			statement.setInt(7, workTypeId);
+			
+			statement.setDouble(8, rate);
+			statement.setDouble(9, grossPay);
+			statement.setDouble(10, netPay);
+			statement.setString(11, gender);
+			
+			statement.setString(12, telNum);
+			statement.setString(13, email);
+			
 			// Get the Unix timestamp
 			long unixDOB = DOB.toLocalDate().atStartOfDay().atZone(ZoneId.systemDefault()).toInstant().getEpochSecond();
-			statement.setLong(11, unixDOB);
-			statement.setString(12, email);
-			statement.setBytes(13, imageData);
-			statement.setInt(14, departmentId);
-			statement.setInt(15, employmentTypeId);
-
-			long unixDate_hired = date_hired.toLocalDate().atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()
-					.getEpochSecond();
+			statement.setLong(14, unixDOB);
+			statement.setBytes(15, imageData);
+			long unixDate_hired = date_hired.toLocalDate().atStartOfDay().atZone(ZoneId.systemDefault()).toInstant().getEpochSecond();
 			statement.setLong(16, unixDate_hired);
 
 			statement.executeUpdate();
@@ -469,12 +504,12 @@ public class EmployeeDatabase {
 		return lastId;
 	}
 
-	public void deleteEmployeeData(int id, String name) {
+	public void deleteEmployeeData(String id, String name) {
 
 		try {
-			String sql = "DELETE FROM employees WHERE id = ?";
+			String sql = "DELETE FROM employees WHERE employee_id = ?";
 			PreparedStatement statement = connection.prepareStatement(sql);
-			statement.setInt(1, id);
+			statement.setString(1, id);
 			statement.executeUpdate();
 			System.out.println("Record deleted.");
 
@@ -521,15 +556,14 @@ public class EmployeeDatabase {
 				employee.setAddress(rs.getString("address"));
 				employee.setDepartment(rs.getString("department_name")); // Fetching department name from joined table
 				employee.setWorkType(rs.getString("work_type")); // Fetching work type from joined table
-				employee.setEmploymentType(rs.getString("employment_type")); // Fetching employment type from joined
-																				// table
+				employee.setEmploymentType(rs.getString("employment_type")); // Fetching employment type from joined table
 				employee.setRatePerHour(rs.getDouble("rate"));
 				employee.setGrossPay(rs.getDouble("grossPay"));
 				employee.setNetPay(rs.getDouble("netPay")); // Assuming netPay is stored as a numeric type
 				employee.setGender(rs.getString("gender"));
 				employee.setContactNumber(rs.getString("tel_number"));
 				employee.setEmail(rs.getString("email"));
-				// converts unix timestamp into a java.sql.Date
+				// converts unixtimestamp into a java.sql.Date
 				employee.setDateHired(Date.valueOf(Instant.ofEpochSecond(rs.getLong("date_hired"))
 						.atZone(ZoneId.systemDefault()).toLocalDateTime().toLocalDate()));
 
@@ -607,22 +641,31 @@ public class EmployeeDatabase {
 	}
 
 	// attendance DB methods
-
-	public String checkAttendanceStatus(String employeeId, String employeeName, String date) {
+	public String checkAttendanceStatus(Employee employee, String employeeId, String employeeName, String date) {
 		String query = "SELECT time_in, time_out FROM attendance WHERE employee_id = ? AND name = ? AND date = ?";
-
+	
 		try (PreparedStatement stmt = connection.prepareStatement(query)) {
 			stmt.setString(1, employeeId);
 			stmt.setString(2, employeeName);
 			stmt.setString(3, date);
-
+	
 			try (ResultSet rs = stmt.executeQuery()) {
 				if (rs.next()) {
 					Long timeIn = rs.getLong("time_in");
 					Long timeOut = rs.getLong("time_out");
+					System.out.println("Time In: " + timeIn + ", Time Out: " + timeOut); // Add this line for logging
+	
+					ZoneId zoneId = ZoneId.systemDefault(); // or specify the desired time zone
+	
 					if (timeIn != null && timeOut != 0) {
+						LocalDateTime timeInDateTime = Instant.ofEpochSecond(timeIn).atZone(zoneId).toLocalDateTime();
+						LocalDateTime timeOutDateTime = Instant.ofEpochSecond(timeOut).atZone(zoneId).toLocalDateTime();
+						employee.setTimeIn(timeInDateTime);
+						employee.setTimeOut(timeOutDateTime);
 						return "shiftEnded";
 					} else if (timeIn != null && timeOut == 0) {
+						LocalDateTime timeInDateTime = Instant.ofEpochSecond(timeIn).atZone(zoneId).toLocalDateTime();
+						employee.setTimeIn(timeInDateTime);
 						return "noTimeOut";
 					}
 				}
@@ -630,10 +673,10 @@ public class EmployeeDatabase {
 		} catch (SQLException e) {
 			System.err.println("Error checking attendance status: " + e.getMessage());
 		}
-
+	
 		return "noTimeIn";
 	}
-
+	
 	public void insertAbsentRecordWithNoTime(String employeeId, String name, String date) {
 		String query = "INSERT INTO attendance (employee_id, name, date, status, time_in, time_out) VALUES (?, ?, ?, 'Absent', NULL, NULL)";
 		try (PreparedStatement stmt = connection.prepareStatement(query)) {
@@ -717,33 +760,6 @@ public class EmployeeDatabase {
 		return new int[] { 0, 0 };
 	}
 
-	public double calculateSalaryByEmploymentType(Employee emp, String employeeId, double ratePerHour, int hoursWorked) {
-		if (emp == null) {
-			throw new IllegalArgumentException("No employee found with ID: " + employeeId);
-		}
-		String employmentType = emp.getEmploymentType();
-		if (employmentType == null) {
-			throw new IllegalArgumentException("Employment type is not set for employee ID: " + employeeId);
-		}
-		double salary = 0.0;
-	
-		switch (employmentType) {
-			case "Full Time":
-				salary = emp.calculateFullTime(ratePerHour, hoursWorked);
-				break;
-			case "Part Time":
-				hoursWorked = Math.min(hoursWorked, 5);
-				salary = emp.calculatePartTime(ratePerHour, hoursWorked);
-				break;
-			case "Project Based":
-				// Implementation to be added later
-				break;
-			default:
-				System.out.println("Unknown employment type");
-				break;
-		}
-		return salary;
-	}
 
 	DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("hh:mm a");
 
@@ -882,10 +898,10 @@ public class EmployeeDatabase {
 	 * @param employeeId The ID of the employee.
 	 * @param date       The date of the attendance record to delete.
 	 */
-	public void deleteAttendance(int employeeId, String date) {
+	public void deleteAttendance(String employeeId, String date) {
 		String sql = "DELETE FROM attendance WHERE employee_id = ? AND date = ?";
 		try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-			stmt.setInt(1, employeeId);
+			stmt.setString(1, employeeId);
 			stmt.setString(2, date);
 			int affectedRows = stmt.executeUpdate();
 			if (affectedRows > 0) {
@@ -897,6 +913,42 @@ public class EmployeeDatabase {
 			System.err.println("Error deleting attendance record: " + e.getMessage());
 		}
 	}
+
+	public void updateAttendance(String employeeId, String date, String status, String clockInNote, String clockOutNote) {
+        String sql = "UPDATE attendance SET status = ?, clock_IN_Note = ?, clock_OUT_Note = ? WHERE employee_id = ? AND date = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, status);
+            stmt.setString(2, clockInNote);
+            stmt.setString(3, clockOutNote);
+            stmt.setString(4, employeeId);
+            stmt.setString(5, date);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error updating attendance record: " + e.getMessage());
+        }
+    }
+	
+	public String getAttendanceDetails(String employeeId, String date) {
+        String sql = "SELECT * FROM attendance WHERE employee_id = ? AND date = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, employeeId);
+            stmt.setString(2, date);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return "Date: " + rs.getString("date") + "\n" +
+                       "Status: " + rs.getString("status") + "\n" +
+                       "Clock In: " + rs.getLong("time_in") + "\n" +
+                       "Clock In Note: " + rs.getString("clock_IN_Note") + "\n" +
+                       "Clock Out: " + rs.getLong("time_out") + "\n" +
+                       "Clock Out Note: " + rs.getString("clock_OUT_Note") + "\n" +
+                       "Overtime: " + rs.getInt("overtime") + "\n" +
+                       "Gross Pay: " + rs.getDouble("date_salary");
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching attendance details: " + e.getMessage());
+        }
+        return "No details found.";
+    }
 
 	// payroll DB methods
 	public void insertGrossPay(String date_created, String id, String name, double grossPay) {
@@ -926,7 +978,7 @@ public class EmployeeDatabase {
 		return null;
 	}
 
-	public void insertPayroll(int employeeId, String name, String department, String workType, double grossPay,
+	public void insertPayroll(String employeeId, String name, String department, String workType, double grossPay,
 			double ratePerDay, int daysWorked, int overtimeHours, double bonus, double totalDeduction, double netPay,
 			java.sql.Date created_at) {
 
@@ -937,7 +989,7 @@ public class EmployeeDatabase {
 				throw new SQLException("Employee with ID " + employeeId + " does not exist.");
 			}
 
-			statement.setInt(1, employeeId);
+			statement.setString(1, employeeId);
 			statement.setString(2, name);
 			statement.setString(3, department);
 			statement.setString(4, workType);
@@ -956,12 +1008,12 @@ public class EmployeeDatabase {
 		}
 	}
 
-	public boolean doesEmployeeExist(int employeeId) {
+	public boolean doesEmployeeExist(String employeeId) {
 
 		// Check if an employee with the given ID exists
 		String sql = "SELECT COUNT(*) FROM employees WHERE id = ?";
 		try (PreparedStatement statement = connection.prepareStatement(sql)) {
-			statement.setInt(1, employeeId);
+			statement.setString(1, employeeId);
 			ResultSet resultSet = statement.executeQuery();
 			return resultSet.next() && resultSet.getInt(1) > 0; // Employee exists if count is greater than 0
 		} catch (SQLException e) {

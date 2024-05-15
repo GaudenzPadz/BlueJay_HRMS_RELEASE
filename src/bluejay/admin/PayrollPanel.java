@@ -45,17 +45,17 @@ public class PayrollPanel extends JPanel implements Printable {
 	private static final long serialVersionUID = 1L;
 	private JTextField tfEmployeeID, tfEmployeeName, tfEmployeeDepartment, tfEmployeeWorkType, tfRatePerHour,
 			tfDaysWorked, tfOvertimeHours, tfGrossPay, tfOvertimeRate, tfDeductionsSSS, tfDeductionsPagIbig,
-			tfDeductionsPhilHealth, tfTotalDeductions, tfAdvanced, tfBonus, tfNetPay;
+			tfDeductionsPhilHealth, tfTotalDeductions, tfAdvanced, tfBonus, tfNetPay, PBRatePerProjectField,
+			PBNumOfProjectsField;
 	private JTable payrollHistoryTable;
 	private EmployeeDatabase db;
 	private List<Employee> employees;
 	private JTable EMPListTable;
 	private DefaultTableModel EMPListModel = new DefaultTableModel(
-			new String[] { "ID", "Name", "Department", "Employment Type", "Work Type", "Select" },
-			0);
+			new String[] { "ID", "Name", "Department", "Employment Type", "Work Type", "Select" }, 0);
 	private DefaultTableModel payrollHistoryTableModel = new DefaultTableModel(
-			new String[] { "ID", "Name", "Department", "Work Type", "Gross Pay",
-					"Rate Pe rDay", "Days Worked", "Overtime Hours", "Bonus", "Total Deductions", "Net Pay" },
+			new String[] { "ID", "Name", "Department", "Work Type", "Gross Pay", "Rate Pe rDay", "Days Worked",
+					"Overtime Hours", "Bonus", "Total Deductions", "Net Pay" },
 			0);
 	private JComboBox<String> employmentTypeComboBox;
 	private JTextField wageField;
@@ -70,6 +70,8 @@ public class PayrollPanel extends JPanel implements Printable {
 	private JLabel TotalDeductionsLabel;
 	private Employee selectedEmployee; // Class member to hold the currently selected employee
 	private JPanel salaryPanel;
+	private JTextField PBTotalDeducField;
+	private JTextField PBNetPayField;
 
 	public PayrollPanel(EmployeeDatabase db) {
 		this.db = db;
@@ -103,6 +105,7 @@ public class PayrollPanel extends JPanel implements Printable {
 		tfDaysWorked = new JTextField();
 		tfOvertimeHours = new JTextField();
 		tfGrossPay = new JTextField();
+		tfNetPay = new JTextField();
 		tfOvertimeRate = new JTextField();
 		tfDeductionsSSS = new JTextField();
 		tfDeductionsPagIbig = new JTextField();
@@ -113,6 +116,7 @@ public class PayrollPanel extends JPanel implements Printable {
 		payrollHistoryTable = new JTable(payrollHistoryTableModel);
 
 		PBRatePerProjectField = new JTextField();
+		PBNumOfProjectsField = new JTextField(10);
 
 		employmentTypeComboBox = new JComboBox<String>();
 
@@ -149,8 +153,8 @@ public class PayrollPanel extends JPanel implements Printable {
 		EMPListModel.setRowCount(0); // Clear existing rows
 
 		for (Employee employee : employees) {
-			EMPListModel.addRow(new Object[] { employee.getEmployeeId(), employee.getFirstName(), employee.getLastName(),
-					employee.getDepartment(), employee.getWorkType(), "Select" });
+			EMPListModel.addRow(new Object[] { employee.getEmployeeId(), employee.getFirstName(),
+					employee.getLastName(), employee.getDepartment(), employee.getWorkType(), "Select" });
 		}
 	}
 
@@ -271,25 +275,27 @@ public class PayrollPanel extends JPanel implements Printable {
 			salaryPane.add(new JLabel("Select an employee from the list."), BorderLayout.CENTER);
 			return salaryPane;
 		}
+		salaryPane.add(partTimePane(), BorderLayout.CENTER);
+
 		String employmentType = selectedEmployee.getEmploymentType();
 
 		switch (employmentType) {
-			case "Part Time":
-				salaryPane.removeAll();
-				salaryPane.add(partTimePane(), BorderLayout.CENTER);
-				break;
-			case "Full Time":
-				salaryPane.removeAll();
-				salaryPane.add(fullTimePane(), BorderLayout.CENTER);
-				break;
-			case "Project Based":
-				salaryPane.removeAll();
-				salaryPane.add(projectBasedPane(), BorderLayout.CENTER);
-				break;
-			default:
-				salaryPane.removeAll();
-				salaryPane.add(new JLabel("Select Employee Above"), BorderLayout.CENTER);
-				break;
+		case "Part Time":
+			salaryPane.removeAll();
+			salaryPane.add(partTimePane(), BorderLayout.CENTER);
+			break;
+		case "Full Time":
+			salaryPane.removeAll();
+			salaryPane.add(fullTimePane(), BorderLayout.CENTER);
+			break;
+		case "Project Based":
+			salaryPane.removeAll();
+			salaryPane.add(projectBasedPane(), BorderLayout.CENTER);
+			break;
+		default:
+			salaryPane.removeAll();
+			salaryPane.add(new JLabel("Select Employee Above"), BorderLayout.CENTER);
+			break;
 		}
 		return salaryPane;
 	}
@@ -348,6 +354,7 @@ public class PayrollPanel extends JPanel implements Printable {
 		fullTimePanel.add(tfNetPay, "cell 1 8,growx");
 
 		JButton fullTimeBtnCalculate = new JButton("Calculate Full Time");
+		fullTimeBtnCalculate.addActionListener(e -> fullTimeMethodCalculation());
 		fullTimePanel.add(fullTimeBtnCalculate, "cell 0 9 2 1,growx");
 		populateEmploymentTypeComboBox();
 
@@ -363,7 +370,7 @@ public class PayrollPanel extends JPanel implements Printable {
 		PBSalaryLabel.setFont(new Font("SansSerif", Font.BOLD, 20));
 		projectBasedPanel.add(PBSalaryLabel, "cell 0 0 2 1");
 
-		projectBasedPanel.add(GrossPayLabel, "cell 0 1,alignx trailing");
+		projectBasedPanel.add(new JLabel("Gross Pay"), "cell 0 1,alignx left");
 
 		projectBasedPanel.add(tfGrossPay, "cell 1 1,growx");
 
@@ -373,29 +380,27 @@ public class PayrollPanel extends JPanel implements Printable {
 
 		projectBasedPanel.add(new JLabel("Number of Projects Completed"), "cell 0 3,alignx left");
 
-		PBNumOfProjectsField = new JTextField();
 		projectBasedPanel.add(PBNumOfProjectsField, "cell 1 3,growx");
-		PBNumOfProjectsField.setColumns(10);
 
 		TotalDeductionsLabel = new JLabel("Total Deductions:");
 		projectBasedPanel.add(TotalDeductionsLabel, "cell 0 4,alignx left");
 
-		PBTotalDeducField = new JTextField();
-		projectBasedPanel.add(PBTotalDeducField, "cell 1 4,growx");
-		PBTotalDeducField.setColumns(10);
+		projectBasedPanel.add(tfTotalDeductions, "cell 1 4,growx");
 
-		JLabel lblNewLabel_9 = new JLabel("Net Pay:");
-		projectBasedPanel.add(lblNewLabel_9, "cell 0 5,alignx center");
+		projectBasedPanel.add(new JLabel("Net Pay:"), "cell 0 5,alignx left");
 
-		PBNetPayField = new JTextField();
-		projectBasedPanel.add(PBNetPayField, "cell 1 5,growx");
-		PBNetPayField.setColumns(10);
+		projectBasedPanel.add(tfNetPay, "cell 1 5,growx");
+
+		JButton PBCalculateBtn = new JButton("Calculate Project Based");
+		PBCalculateBtn.addActionListener(e -> projectBasedMethodCalculation());
+		projectBasedPanel.add(PBCalculateBtn, "cell 0 8 2 1,growx");
 		return projectBasedPanel;
 	}
 
 	private JPanel partTimePane() {
 		JPanel partTimePanel = new JPanel(
 				new MigLayout("fill,insets 10", "[95px][86px,grow]", "[][][][][][][][][20px][]"));
+		partTimePanel.setBorder(new BevelBorder(BevelBorder.LOWERED));
 
 		JLabel partTimerSalaryTItle = new JLabel("Part Timer Salary");
 		partTimerSalaryTItle.setFont(new Font("SansSerif", Font.BOLD, 20));
@@ -405,31 +410,24 @@ public class PayrollPanel extends JPanel implements Printable {
 		JLabel ptGrossPayLabel = new JLabel("Gross Pay:");
 		partTimePanel.add(ptGrossPayLabel, "cell 0 1,alignx left");
 
-		PTGrossPayField = new JTextField();
-		partTimePanel.add(PTGrossPayField, "cell 1 1,growx");
-		PTGrossPayField.setColumns(10);
+		partTimePanel.add(tfGrossPay, "cell 1 1,growx");
 
-		JLabel PTratePerDayLabel = new JLabel("Rate per Day");
-		partTimePanel.add(PTratePerDayLabel, "cell 0 2,alignx left");
+		partTimePanel.add(new JLabel("Rate per Hour"), "cell 0 2,alignx left");
 
-		PTRatePerDayField = new JTextField();
-		partTimePanel.add(PTRatePerDayField, "cell 1 2,growx");
-		PTRatePerDayField.setColumns(10);
+		partTimePanel.add(tfRatePerHour, "cell 1 2,growx");
 
 		JLabel lblNewLabel_2 = new JLabel("Days Worked");
 		partTimePanel.add(lblNewLabel_2, "cell 0 3,alignx left");
 
-		PTDaysWorkedField = new JTextField();
-		partTimePanel.add(PTDaysWorkedField, "cell 1 3,growx");
-		PTDaysWorkedField.setColumns(10);
+		partTimePanel.add(tfDaysWorked, "cell 1 3,growx");
 
-		JLabel lblNewLabel_3 = new JLabel("Net Pay:");
-		partTimePanel.add(lblNewLabel_3, "cell 0 4,alignx center");
+		JLabel ptNetPayLabel = new JLabel("Net Pay:");
+		partTimePanel.add(ptNetPayLabel, "cell 0 4,alignx left");
 
-		PTNetPayField = new JTextField(10);
-		partTimePanel.add(PTNetPayField, "cell 1 4,growx");
+		partTimePanel.add(tfNetPay, "cell 1 4,growx");
 
 		JButton partTimeBtnCalculate = new JButton("Calculate Part Time");
+		partTimeBtnCalculate.addActionListener(e -> partTimeMethodCalculation());
 		partTimePanel.add(partTimeBtnCalculate, "cell 0 8 2 1,growx");
 		return partTimePanel;
 	}
@@ -484,26 +482,42 @@ public class PayrollPanel extends JPanel implements Printable {
 		}
 	}
 
-	private JTextField PTGrossPayField;
-	private JTextField PTRatePerDayField;
-	private JTextField PTDaysWorkedField;
-	private JTextField PTNetPayField;
-	private JTextField PBRatePerProjectField;
-	private JTextField PBNumOfProjectsField;
-	private JTextField PBTotalDeducField;
-	private JTextField PBGrossPayField;
-	private JTextField PBNetPayField;
-
 	private void projectBasedMethodCalculation() {
-		// rate * numbers of completed projects
+		// Get the employee ID from the form
+		String employeeId = tfEmployeeID.getText();
+		// Additional form fields
+		String employeeName = tfEmployeeName.getText();
+		String employeeDepartment = tfEmployeeDepartment.getText();
+		String employeeWorkType = tfEmployeeWorkType.getText();
+		double advanced = Double.parseDouble(tfAdvanced.getText());
+		double sss = Double.parseDouble(tfDeductionsSSS.getText());
+		double pagIbig = Double.parseDouble(tfDeductionsPagIbig.getText());
+		double philHealth = Double.parseDouble(tfDeductionsPhilHealth.getText());
+		double ratePerProject = Double.parseDouble(PBRatePerProjectField.getText());
+		int numberOfProjectsCompleted = Integer.parseInt(PBNumOfProjectsField.getText());
 
+		// Corrected calculation for gross pay
+		double grossPay = ratePerProject * 9 * numberOfProjectsCompleted;
+
+		double totalDeductions = sss + pagIbig + philHealth + advanced;
+		double netPay = grossPay - totalDeductions;
+
+		// Update the form with calculated values
+		tfGrossPay.setText(String.format("%.2f", grossPay));
+		tfTotalDeductions.setText(String.format("%.2f", totalDeductions));
+		tfNetPay.setText(String.format("%.2f", netPay));
+
+		// Save the payroll record to the database
+		// db.insertPayroll(employeeId, employeeName, employeeDepartment,
+		// employeeWorkType, grossPay, ratePerProject,
+		// 0, 0, 0, totalDeductions, netPay, new Date(System.currentTimeMillis()));
 	}
 
 	private void fullTimeMethodCalculation() {
 		// disable project completed
 		//
 		// Get the employee ID from the form
-		int employeeId = Integer.parseInt(tfEmployeeID.getText());
+		String employeeId = tfEmployeeID.getText();
 		// Additional form fields
 		String employeeName = tfEmployeeName.getText();
 		String employeeDepartment = tfEmployeeDepartment.getText();
@@ -518,7 +532,7 @@ public class PayrollPanel extends JPanel implements Printable {
 		double sss = Double.parseDouble(tfDeductionsSSS.getText());
 		double pagIbig = Double.parseDouble(tfDeductionsPagIbig.getText());
 		double philHealth = Double.parseDouble(tfDeductionsPhilHealth.getText());
-		double basicSalary = ratePerHour * daysWorked;
+		double basicSalary = (ratePerHour * 9) * daysWorked;
 		double overTimePay = overtimeHours * ratePerHour; // Use the same rate per day
 		double grossPay = basicSalary + overTimePay + bonus;
 
@@ -532,16 +546,33 @@ public class PayrollPanel extends JPanel implements Printable {
 
 		// Save the payroll record to the database
 		db.insertPayroll(employeeId, employeeName, employeeDepartment, employeeWorkType, grossPay, ratePerHour,
-				daysWorked, (int) overtimeHours, bonus, totalDeductions, netPay, new Date(System.currentTimeMillis())); // Use
-																														// the
-																														// current
-																														// date
-																														// }
+				daysWorked, (int) overtimeHours, bonus, totalDeductions, netPay, new Date(System.currentTimeMillis()));
 	}
 
 	private void partTimeMethodCalculation() {
-		// rate per day * rate per work * 0.5
-		//
+		// ratedouble basicSalary = (ratePerHour * 9) * daysWorked;
+		String employeeId = tfEmployeeID.getText();
+		// Additional form fields
+		String employeeName = tfEmployeeName.getText();
+		String employeeDepartment = tfEmployeeDepartment.getText();
+		String employeeWorkType = tfEmployeeWorkType.getText();
+		double ratePerHour = Double.parseDouble(tfRatePerHour.getText());
+		int daysWorked = Integer.parseInt(tfDaysWorked.getText());
+		String employmentType = employmentTypeComboBox.getSelectedItem().toString();
+		// Calculation
+		double basicSalary = (ratePerHour * 5) * daysWorked;
+		double grossPay = basicSalary;
+		double netPay = grossPay;
+
+		// Update the form with calculated values
+		tfGrossPay.setText(String.format("%.2f", grossPay));
+		tfNetPay.setText(String.format("%.2f", netPay));
+
+		// Save the payroll record to the database
+		// db.insertPayroll(employeeId, employeeName, employeeDepartment,
+		// employeeWorkType, grossPay, ratePerHour,
+		// daysWorked, 0, 0, 0, netPay, new Date(System.currentTimeMillis()));
+
 	}
 
 	private void refreshTable(DefaultTableModel model) {
@@ -605,17 +636,16 @@ public class PayrollPanel extends JPanel implements Printable {
 			}
 
 			loadDeductions();
-			updateSalaryPane(); // Update the salary panel based on the selected employee's employment type
+			updateSalaryPane(); // Ensure this method is called to update the salary panel
 			revalidate();
 			repaint();
 		}
 	}
 
 	private void updateSalaryPane() {
-		// Assuming you have a reference to the panel that contains the salaryPane
 		salaryPanel.removeAll();
-		salaryPanel.setLayout(new MigLayout()); // Set MigLayout to the salaryPanel
-		salaryPanel.add(salaryPane(), "cell 4 2 2 9,grow");
+		salaryPanel.setLayout(new BorderLayout()); // Assuming BorderLayout is suitable for your layout needs
+		salaryPanel.add(salaryPane(), BorderLayout.CENTER);
 		salaryPanel.revalidate();
 		salaryPanel.repaint();
 	}

@@ -102,7 +102,7 @@ public class AttendanceForm extends JPanel {
 			markAbsentDays(missingDates, employee.getEmployeeId(), name);
 		}
 
-		String attendanceStatus = db.checkAttendanceStatus(employee.getEmployeeId(), name, currentDate.toString());
+		String attendanceStatus = db.checkAttendanceStatus(employee, employee.getEmployeeId(), name, currentDate.toString());
 
 		FlatAnimatedLafChange.showSnapshot();
 		removeAll();
@@ -357,8 +357,9 @@ public class AttendanceForm extends JPanel {
 
 			// Calculate salary based on employment type
 			double ratePerHour = employee.getRatePerHour();
-			double salary = db.calculateSalaryByEmploymentType(employee, employee.getEmployeeId(), ratePerHour, workedHoursManual);
-
+			double salary = calculateSalaryByEmploymentType( employee.getEmployeeId(), ratePerHour, workedHoursManual);
+			System.out.println(salary);
+			
 			db.updateTimeOut(employee.getEmployeeId(), LocalDate.now().toString(), unixTimestampOUT, "Shift Ended",
 					clockOUTnote.getText(), overtimeHours, workedHoursManual, salary);
 			JOptionPane.showMessageDialog(this, "Time Out recorded. Total Worked Hours: " + workedHoursManual
@@ -368,6 +369,36 @@ public class AttendanceForm extends JPanel {
 			revalidate();
 		}
 	}
+	
+	public double calculateSalaryByEmploymentType(String employeeId, double ratePerHour, int hoursWorked) {
+		Employee employee = db.getEmployeeById(employeeId);
+		if (employee == null || employee.getEmploymentType() == null) {
+			System.err.println("Employee or employment type is null for employee ID: " + employeeId);
+			return 0; // or handle appropriately
+		}
+	
+		String employmentType = employee.getEmploymentType();
+		double salary = 0 ;
+	
+		switch (employmentType) {
+			case "Full Time":
+				salary = employee.calculateFullTime(ratePerHour, hoursWorked);
+				System.out.println("Full Time Calculations: " + salary);
+				break;
+			case "Part Time":
+				hoursWorked = Math.min(hoursWorked, 5);
+				salary = employee.calculatePartTime(ratePerHour, hoursWorked);
+				break;
+			case "Project Based":
+				// Implementation to be added later
+				break;
+			default:
+				System.out.println("Unknown employment type");
+				break;
+		}
+		return salary;
+	}
+
 
 	private int calculateWorkedHours(LocalDateTime timeIn, LocalDateTime timeOut) {
 		long duration = ChronoUnit.SECONDS.between(timeIn, timeOut);

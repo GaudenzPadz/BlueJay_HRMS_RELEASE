@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Image;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.ResultSet;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import javax.swing.AbstractCellEditor;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -34,6 +36,8 @@ import javax.swing.event.DocumentListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableRowSorter;
 
@@ -51,14 +55,14 @@ public class EMPListPanel extends JPanel {
 	private JMenuItem menuItemRemove, menuItemEdit;
 	public final Map<String, String> workTypeMap = new HashMap<>();
 	private String[] column = { "Employee ID", "First Name", "Last Name", "Address", "Department", "Employment Type",
-			"Work Type", "Basic Salary" };
+			"Work Type", "Basic Salary", "Actions" };
 	private EmployeeDatabase db;
 	private DefaultTableModel model = new DefaultTableModel(column, 0) {
 		private static final long serialVersionUID = 4L;
 
 		@Override
 		public boolean isCellEditable(int rowIndex, int columnIndex) {
-			boolean[] columnEditables = new boolean[] { false, true, true, true, true, true, true, false};
+			boolean[] columnEditables = new boolean[] { false, true, true, true, true, true, true, false, true };
 			return columnEditables[columnIndex];
 		}
 	};
@@ -75,15 +79,19 @@ public class EMPListPanel extends JPanel {
 
 		TableColumnModel columnModel = table.getColumnModel();
 
-		columnModel.getColumn(0).setPreferredWidth(150);
+		columnModel.getColumn(0).setPreferredWidth(130);// id
 		columnModel.getColumn(0).setResizable(false);
-		columnModel.getColumn(1).setPreferredWidth(100);
-		columnModel.getColumn(2).setPreferredWidth(100);
-		columnModel.getColumn(3).setPreferredWidth(200);
-		columnModel.getColumn(4).setPreferredWidth(200);
-		columnModel.getColumn(5).setPreferredWidth(230);
-		columnModel.getColumn(6).setPreferredWidth(200);
-		columnModel.getColumn(7).setPreferredWidth(100);
+		columnModel.getColumn(1).setPreferredWidth(120);// first name
+		columnModel.getColumn(2).setPreferredWidth(120);// last name
+		columnModel.getColumn(3).setPreferredWidth(200);// address
+		columnModel.getColumn(4).setPreferredWidth(100);// department
+		columnModel.getColumn(5).setPreferredWidth(130);// employment type
+		columnModel.getColumn(6).setPreferredWidth(240);// work type
+		columnModel.getColumn(7).setPreferredWidth(100);// basic salary
+		columnModel.getColumn(8).setPreferredWidth(200);// actions
+
+		table.getColumnModel().getColumn(8).setCellRenderer(new ActionsRenderer());
+		table.getColumnModel().getColumn(8).setCellEditor(new ActionsEditor());
 
 		table.setToolTipText("Right Click For Options"); // floating text on the table
 		table.setCellSelectionEnabled(true);
@@ -178,7 +186,12 @@ public class EMPListPanel extends JPanel {
 		editBtn.setContentAreaFilled(false);
 		editBtn.setBorderPainted(false);
 		editBtn.addActionListener((ActionEvent e) -> {
-			editSelected();
+			if (table.getSelectedRow() == -1) {
+				JOptionPane.showMessageDialog(null, "Please select an employee to edit.", "Error",
+						JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			editSelectedRow(table.getSelectedRow());
 		});
 		panel.add(editBtn);
 
@@ -248,6 +261,58 @@ public class EMPListPanel extends JPanel {
 		refreshTable();
 	}
 
+	// Custom renderer for the "Actions" column
+	private class ActionsRenderer extends JPanel implements TableCellRenderer {
+		private final JButton editButton = new JButton("Edit");
+		private final JButton deleteButton = new JButton("Delete");
+
+		public ActionsRenderer() {
+			setLayout(new FlowLayout(FlowLayout.CENTER, 5, 0));
+			add(editButton);
+			add(deleteButton);
+		}
+
+		@Override
+		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
+				int row, int column) {
+			return this;
+		}
+	}
+
+	// Custom editor for the "Actions" column
+	private class ActionsEditor extends AbstractCellEditor implements TableCellEditor {
+		private final JPanel panel = new JPanel();
+		private final JButton editButton = new JButton("Edit");
+		private final JButton deleteButton = new JButton("Delete");
+
+		public ActionsEditor() {
+			panel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 0));
+			panel.add(editButton);
+			panel.add(deleteButton);
+
+			editButton.addActionListener(e -> {
+				fireEditingStopped();
+				editSelectedRow(table.getSelectedRow());
+			});
+
+			deleteButton.addActionListener(e -> {
+				fireEditingStopped();
+				deleteSelectedRow(table.getSelectedRow());
+			});
+		}
+
+		@Override
+		public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row,
+				int column) {
+			return panel;
+		}
+
+		@Override
+		public Object getCellEditorValue() {
+			return null;
+		}
+	}
+
 	private void popupMenu() {
 		// constructs the popup menu
 		popupMenu = new JPopupMenu();
@@ -265,7 +330,7 @@ public class EMPListPanel extends JPanel {
 			}
 
 			// Get the employee ID from the selected row
-			int employeeId = (int) table.getValueAt(selectedRow, 0);
+			String employeeId = (String) table.getValueAt(selectedRow, 0);
 			String empName = (String) table.getValueAt(selectedRow, 1) + "" + (String) table.getValueAt(selectedRow, 2);
 
 			// Confirm deletion with the user
@@ -283,39 +348,56 @@ public class EMPListPanel extends JPanel {
 		});
 
 		menuItemEdit.addActionListener((ActionEvent e) -> {
-			editSelected();
+			editSelectedRow(table.getSelectedRow());
 		});
 		// sets the popup menu for the table
 		table.setComponentPopupMenu(popupMenu);
 
 	}
 
-	private void editSelected() {
-		int selectedRow = table.getSelectedRow();
-		if (selectedRow == -1) {
+	// Method to edit the selected row
+	private void editSelectedRow(int row) {
+		if (row == -1) {
 			JOptionPane.showMessageDialog(null, "Please select an employee to edit.", "Error",
 					JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 
-		// Retrieve employee ID from the table
-		String employeeId = table.getValueAt(selectedRow, 0).toString();
-
+		String employeeId = table.getValueAt(row, 0).toString();
 		try {
-			// Fetch complete Employee object from the database
 			Employee employee = db.getEmployeeById(employeeId);
 			if (employee == null) {
 				JOptionPane.showMessageDialog(null, "Employee not found.", "Error", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
 
-			// Display the EmployeeEditWindowb
 			JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(EMPListPanel.this);
 			EmployeeEditWindow editWindow = new EmployeeEditWindow(parentFrame, employee, db);
 			editWindow.setVisible(true);
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(null, "Failed to retrieve employee data: " + e.getMessage(), "Database Error",
 					JOptionPane.ERROR_MESSAGE);
+		}
+	}
+
+	// Method to delete the selected row
+	private void deleteSelectedRow(int row) {
+		if (row == -1) {
+			JOptionPane.showMessageDialog(null, "Please select an employee to delete.", "Error",
+					JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+
+		String employeeId = table.getValueAt(row, 0).toString();
+		String empName = table.getValueAt(row, 1).toString() + " " + table.getValueAt(row, 2).toString();
+
+		int confirm = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete this employee?",
+				"Confirm Deletion", JOptionPane.YES_NO_OPTION);
+		if (confirm == JOptionPane.YES_OPTION) {
+			db.deleteEmployeeData(employeeId, empName);
+			JOptionPane.showMessageDialog(null, "Employee deleted successfully.", "Success",
+					JOptionPane.INFORMATION_MESSAGE);
+			refreshTable();
 		}
 	}
 
@@ -331,10 +413,10 @@ public class EMPListPanel extends JPanel {
 			protected Void doInBackground() throws Exception {
 				try (ResultSet rs = db.getAllData()) {
 					while (rs.next()) {
-						publish(new Object[] { 
+						publish(new Object[] {
 								rs.getString("employee_id"), rs.getString("first_name"),
 								rs.getString("last_name"), rs.getString("address"), rs.getString("department"),
-								rs.getString("employment_type"), rs.getString(	"work_type"), rs.getDouble("rate") });
+								rs.getString("employment_type"), rs.getString("work_type"), rs.getDouble("rate") });
 					}
 				}
 				return null;

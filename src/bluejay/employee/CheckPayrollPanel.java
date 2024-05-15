@@ -1,15 +1,32 @@
 package bluejay.employee;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.sql.SQLException;
-import javax.swing.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.print.PageFormat;
+import java.awt.print.Printable;
+import java.awt.print.PrinterException;
+import java.awt.print.PrinterJob;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.table.DefaultTableModel;
+
 import bluejay.Employee;
 import bluejay.Main;
 import bluejayDB.EmployeeDatabase;
 import net.miginfocom.swing.MigLayout;
-import java.awt.print.*;
 
 public class CheckPayrollPanel extends JPanel implements Printable {
 
@@ -18,7 +35,7 @@ public class CheckPayrollPanel extends JPanel implements Printable {
     private Employee currentEmployee;
     private JTable table;
     private DefaultTableModel model;
-    private JTextArea textArea;
+    private JTextArea txtrPayslip;
 
     public CheckPayrollPanel(Employee currentEmployee, EmployeeDatabase db) {
         this.db = db;
@@ -63,30 +80,40 @@ public class CheckPayrollPanel extends JPanel implements Printable {
     }
 
     private JPanel createMainPane() {
-        JPanel mainPane = new JPanel(new MigLayout("wrap, fillx", "[grow]", "[][100px,center][][150px,center][][][]"));
+        JPanel mainPane = new JPanel(new MigLayout("wrap, fillx", "[grow]", "[][100px,center][][150px,center][][][][][]"));
 
         model = new DefaultTableModel(
-            new String[]{"Date", "Basic Salary", "Gross Pay", "Total Deduction", "Net Pay", "Salary Period"}, 0
+            new String[]{"Date", "Employment Type", "Basic Salary", "Gross Pay", "Total Deduction", "Net Pay", "Salary Period"}, 0
         );
         table = new JTable(model);
 
-        textArea = new JTextArea();
-        textArea.setEditable(false);
-        textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        txtrPayslip = new JTextArea();
+        txtrPayslip.setEditable(false);
+        txtrPayslip.setFont(new Font("Monospaced", Font.PLAIN, 12));
 
         JScrollPane tableScrollPane = new JScrollPane(table);
         mainPane.add(tableScrollPane, "cell 0 1, growx");
 
-        JScrollPane textAreaScrollPane = new JScrollPane(textArea);
+        JScrollPane textAreaScrollPane = new JScrollPane(txtrPayslip);
         mainPane.add(textAreaScrollPane, "cell 0 3, grow");
 
         JButton refreshButton = new JButton("Refresh");
         refreshButton.addActionListener(e -> loadPayrollData());
-        mainPane.add(refreshButton, "cell 0 0, alignx left");
-
-        JButton printButton = new JButton("Print PaySlip");
-        printButton.addActionListener(e -> printPaySlip());
-        mainPane.add(printButton, "cell 0 4, alignx right");
+        mainPane.add(refreshButton, "flowx,cell 0 0,alignx left");
+        
+        JButton requestBTN = new JButton("Request");
+        mainPane.add(requestBTN, "cell 0 0");
+                        
+                                JButton printButton = new JButton("Print PaySlip");
+                                printButton.addActionListener(e -> printPaySlip());
+                                
+                                JButton checkBTN = new JButton("check payslip");
+                                checkBTN.addActionListener(new ActionListener() {
+                                    public void actionPerformed(ActionEvent e) {
+                                    }
+                                });
+                                mainPane.add(checkBTN, "cell 0 4,alignx right");
+                                mainPane.add(printButton, "cell 0 5,alignx right");
 
         return mainPane;
     }
@@ -94,7 +121,7 @@ public class CheckPayrollPanel extends JPanel implements Printable {
     private void loadPayrollData() {
         model.setRowCount(0); // Clear existing data
         try {
-            db.loadEMPPayroll(currentEmployee, model, textArea); // Load payroll data
+            db.loadEMPPayroll(currentEmployee, model, txtrPayslip); // Load payroll data
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Failed to load payroll data: " + ex.getMessage(), "Error",
                 JOptionPane.ERROR_MESSAGE);
@@ -126,7 +153,7 @@ public class CheckPayrollPanel extends JPanel implements Printable {
 
         Graphics2D g2d = (Graphics2D) g;
         g2d.translate(pf.getImageableX(), pf.getImageableY());
-        textArea.printAll(g); // Print contents of the textArea
+        txtrPayslip.printAll(g); // Print contents of the textArea
 
         return PAGE_EXISTS;
     }

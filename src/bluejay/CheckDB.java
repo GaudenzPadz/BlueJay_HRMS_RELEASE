@@ -43,6 +43,7 @@ public class CheckDB extends JFrame {
     private static final long serialVersionUID = 213;
     private Map<String, EditableTableModel> tableModels; // Using EditableTableModel
     private Connection connection;
+    private Map<String, JTable> tables; // Map to store JTable references
 
     public CheckDB() {
         setTitle("Check SQL");
@@ -56,8 +57,12 @@ public class CheckDB extends JFrame {
         JButton saveButton = new JButton("SAVE");
         saveButton.addActionListener(e -> saveChanges());
 
+        JButton deleteRowButton = new JButton("DELETE ROW");
+        deleteRowButton.addActionListener(e -> deleteSelectedRow());
+
         getContentPane().add(reset, "flowx,cell 0 0");
         getContentPane().add(saveButton, "cell 0 0");
+        getContentPane().add(deleteRowButton, "cell 0 0");
 
         this.setVisible(true);
 
@@ -70,14 +75,16 @@ public class CheckDB extends JFrame {
             e.printStackTrace(); // Log the exception
         }
 
-        // Map for storing table models for easier management
+        // Map for storing table models and JTables for easier management
         tableModels = new HashMap<>();
+        tables = new HashMap<>();
         String[] tableNames = { "employees", "deductions", "department", "attendance", "payroll", "users", "types" };
         for (String tableName : tableNames) {
             EditableTableModel model = new EditableTableModel(new Object[][] {}, new Object[] {});
             tableModels.put(tableName, model);
 
             JTable table = new JTable(model);
+            tables.put(tableName, table); // Store the table reference
             JScrollPane sp = new JScrollPane(table);
             getContentPane().add(sp, "cell 0 " + (1 + Arrays.asList(tableNames).indexOf(tableName)) + ",grow");
 
@@ -88,6 +95,32 @@ public class CheckDB extends JFrame {
             } catch (SQLException e) {
                 e.printStackTrace(); // Log the exception
             }
+        }
+    }
+
+    private void deleteSelectedRow() {
+        // Example for one table, extend as needed for multiple tables
+        String tableName = "employees"; // Change as needed or determine dynamically
+        JTable table = tables.get(tableName);
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow >= 0) {
+            try {
+                Object primaryKey = table.getValueAt(selectedRow, 0); // Assuming first column is the ID
+                String sql = "DELETE FROM " + tableName + " WHERE " + table.getColumnName(0) + " = ?";
+                PreparedStatement preparedStatement = connection.prepareStatement(sql);
+                preparedStatement.setObject(1, primaryKey);
+                preparedStatement.executeUpdate();
+                preparedStatement.close();
+
+                // Remove row from the table model
+                ((DefaultTableModel) table.getModel()).removeRow(selectedRow);
+                JOptionPane.showMessageDialog(this, "Row deleted successfully!");
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(this, "Error deleting row.", "Error", JOptionPane.ERROR_MESSAGE);
+                e.printStackTrace();
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "No row selected!");
         }
     }
 

@@ -102,7 +102,8 @@ public class AttendanceForm extends JPanel {
 			markAbsentDays(missingDates, employee.getEmployeeId(), name);
 		}
 
-		String attendanceStatus = db.checkAttendanceStatus(employee, employee.getEmployeeId(), name, currentDate.toString());
+		String attendanceStatus = db.checkAttendanceStatus(employee, employee.getEmployeeId(), name,
+				currentDate.toString());
 
 		FlatAnimatedLafChange.showSnapshot();
 		removeAll();
@@ -110,15 +111,17 @@ public class AttendanceForm extends JPanel {
 		switch (attendanceStatus) {
 			case "shiftEnded":
 				setupUI(shiftEndedPanel());
+				updateGrossPayField(); // Update the gross pay field whenever the attendance status is checked
+
 				break;
 			case "noTimeOut":
 				setupUI(attendanceOUTForm());
+
 				break;
 			default:
 				setupUI(attendanceForm());
 				break;
 		}
-		updateGrossPayField(); // Update the gross pay field whenever the attendance status is checked
 		revalidate();
 		repaint();
 		FlatAnimatedLafChange.hideSnapshotWithAnimation();
@@ -192,6 +195,21 @@ public class AttendanceForm extends JPanel {
 
 	}
 
+	private void setCurrentTimeToFields(JSpinner hourSpinner, JSpinner minuteSpinner) {
+		Calendar now = Calendar.getInstance();
+		int hours = now.get(Calendar.HOUR) == 0 ? 12 : now.get(Calendar.HOUR); // Adjust for 12-hour format
+		int minutes = now.get(Calendar.MINUTE);
+		boolean isPM = now.get(Calendar.AM_PM) == Calendar.PM;
+
+		hourSpinner.setValue(hours);
+		minuteSpinner.setValue(minutes);
+		if (this.AmPmCombo == null) {
+			AmPmOUTCombo.setSelectedItem(isPM ? "PM" : "AM");
+		} else if (this.AmPmOUTCombo == null) {
+			AmPmCombo.setSelectedItem(isPM ? "PM" : "AM");
+		}
+	}
+
 	private JPanel attendanceForm() {
 		JPanel attendanceForm = new JPanel(
 				new MigLayout("wrap,fillx,insets 25 35 25 35", "[200px,grow,center][100px][200px]",
@@ -257,7 +275,8 @@ public class AttendanceForm extends JPanel {
 			LocalDateTime dateTime = LocalDate.now(zoneId).atTime(hours, minutes);
 			long unixTimestamp = dateTime.atZone(zoneId).toEpochSecond();
 
-			db.addTimeIn(employee.getEmployeeId(), name, employee.getEmploymentType(), "Active", currentDate, unixTimestamp,
+			db.addTimeIn(employee.getEmployeeId(), name, employee.getEmploymentType(), "Active", currentDate,
+					unixTimestamp,
 					clockINnote.getText());
 
 			employee.setTimeIn(dateTime);
@@ -309,23 +328,40 @@ public class AttendanceForm extends JPanel {
 		return attendanceOUTForm;
 	}
 
-	public double calculateGrossPayFrom1To15() {
+	public double calculateTotalGrossPay() {
 		double totalGrossPay = 0.0;
-		int dateColumnIndex = 1; // Assuming the date is in the second column
 		int grossPayColumnIndex = 9; // Assuming the grossPay is in the tenth column
 
 		for (int i = 0; i < attendanceModel.getRowCount(); i++) {
-			String dateStr = (String) attendanceModel.getValueAt(i, dateColumnIndex);
-			LocalDate date = LocalDate.parse(dateStr);
-			if (date.getDayOfMonth() >= 1 && date.getDayOfMonth() <= 15) {
-				Object grossPayObj = attendanceModel.getValueAt(i, grossPayColumnIndex);
-				if (grossPayObj != null) {
-					double grossPay = Double.parseDouble(grossPayObj.toString());
-					totalGrossPay += grossPay;
-				}
+			Object grossPayObj = attendanceModel.getValueAt(i, grossPayColumnIndex);
+			if (grossPayObj != null) {
+				double grossPay = Double.parseDouble(grossPayObj.toString());
+				totalGrossPay += grossPay;
 			}
 		}
 		return totalGrossPay;
+	}
+
+	private void updateGrossPayField() {
+		employee.setGrossPay(calculateTotalGrossPay());
+	
+		// // Check if there are 15 rows or 15 days of attendance records
+		// if (attendanceModel.getRowCount() == 15) {
+			// Check for existing gross pay record with the same date_created
+			if (!db.isGrossPayRecordExists(currentDate, employee.getEmployeeId())) {
+				db.insertGrossPay(currentDate, employee.getEmployeeId(), name, employee.getGrossPay());
+			}
+	
+		// 	// Remove the 1st to 15th rows in the database if there are 15 rows in attendance history
+		// 	if (attendanceModel.getRowCount() == 15) {
+		// 		db.deleteAttendanceRecords(employee.getEmployeeId(), 1, 15);
+		// 	}
+	
+		// 	attendanceModel.setRowCount(0); // Clear the table model
+		// 	refreshTable(attendanceModel); // Reload the table data
+		// }
+	
+		grossPayField.setText(String.format("%.2f", employee.getGrossPay()));
 	}
 
 	private void handleClockOut() {
@@ -357,11 +393,12 @@ public class AttendanceForm extends JPanel {
 
 			// Calculate salary based on employment type
 			double ratePerHour = employee.getRatePerHour();
-			double salary = calculateSalaryByEmploymentType( employee.getEmployeeId(), ratePerHour, workedHoursManual);
+			double salary = calculateSalaryByEmploymentType(employee.getEmployeeId(), ratePerHour, workedHoursManual);
 			System.out.println(salary);
-			
+
 			db.updateTimeOut(employee.getEmployeeId(), LocalDate.now().toString(), unixTimestampOUT, "Shift Ended",
 					clockOUTnote.getText(), overtimeHours, workedHoursManual, salary);
+			
 			JOptionPane.showMessageDialog(this, "Time Out recorded. Total Worked Hours: " + workedHoursManual
 					+ ", Overtime Hours: " + overtimeHours + ", Salary: " + salary);
 			refreshTable(attendanceModel);
@@ -369,17 +406,17 @@ public class AttendanceForm extends JPanel {
 			revalidate();
 		}
 	}
-	
+
 	public double calculateSalaryByEmploymentType(String employeeId, double ratePerHour, int hoursWorked) {
 		Employee employee = db.getEmployeeById(employeeId);
 		if (employee == null || employee.getEmploymentType() == null) {
 			System.err.println("Employee or employment type is null for employee ID: " + employeeId);
 			return 0; // or handle appropriately
 		}
-	
+
 		String employmentType = employee.getEmploymentType();
-		double salary = 0 ;
-	
+		double salary = 0;
+
 		switch (employmentType) {
 			case "Full Time":
 				salary = employee.calculateFullTime(ratePerHour, hoursWorked);
@@ -399,7 +436,6 @@ public class AttendanceForm extends JPanel {
 		return salary;
 	}
 
-
 	private int calculateWorkedHours(LocalDateTime timeIn, LocalDateTime timeOut) {
 		long duration = ChronoUnit.SECONDS.between(timeIn, timeOut);
 		return (int) (duration / 3600); // Convert seconds to hours
@@ -407,8 +443,7 @@ public class AttendanceForm extends JPanel {
 
 	private int calculateOvertime(int workedHours) {
 		int standardWorkdayHours = 9; // Define standard workday hours
-		return Math.max(0, workedHours - standardWorkdayHours); // Overtime is any hours worked beyond the standard
-																// hours
+		return Math.max(0, workedHours - standardWorkdayHours); // Overtime is any hours worked beyond the stand hours
 	}
 
 	private JPanel shiftEndedPanel() {
@@ -465,34 +500,6 @@ public class AttendanceForm extends JPanel {
 	private void refreshTable(DefaultTableModel modely) {
 		modely.setRowCount(0);
 		db.loadEMPAttendanceData(employee.getEmployeeId(), modely);
-	}
-
-	private void updateGrossPayField() {
-		double grossPay = calculateGrossPayFrom1To15();
-		employee.setGrossPay(grossPay);
-
-		//only save if the table has 15 rows or 15 attendance records
-		if (attendanceModel.getRowCount() == 15) {
-			db.insertGrossPay(currentDate, employee.getEmployeeId(), name, employee.getGrossPay());
-			// then reset the table
-		} 
-		grossPayField.setText(String.format("%.2f", grossPay));
-
-	}
-
-	private void setCurrentTimeToFields(JSpinner hourSpinner, JSpinner minuteSpinner) {
-		Calendar now = Calendar.getInstance();
-		int hours = now.get(Calendar.HOUR) == 0 ? 12 : now.get(Calendar.HOUR); // Adjust for 12-hour format
-		int minutes = now.get(Calendar.MINUTE);
-		boolean isPM = now.get(Calendar.AM_PM) == Calendar.PM;
-
-		hourSpinner.setValue(hours);
-		minuteSpinner.setValue(minutes);
-		if (this.AmPmCombo == null) {
-			AmPmOUTCombo.setSelectedItem(isPM ? "PM" : "AM");
-		} else if (this.AmPmOUTCombo == null) {
-			AmPmCombo.setSelectedItem(isPM ? "PM" : "AM");
-		}
 	}
 
 }

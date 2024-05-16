@@ -40,8 +40,6 @@ class EmployeeEditWindow extends JDialog {
 	private JTextField lNameField;
 	private JTextField addressField;
 	private JTextField rateField;
-	private JTextField grossPayField;
-	private JTextField netPayField;
 	private JTextField contactNumberField;
 	private JTextField emailField;
 	private JTextField otherWorkTypeField;
@@ -64,14 +62,14 @@ class EmployeeEditWindow extends JDialog {
 
 	private JTextField employeeIdField;
 
-	public EmployeeEditWindow(JFrame parent, Employee employee, EmployeeDatabase db) {
+	public EmployeeEditWindow(JFrame parent, Employee emp, EmployeeDatabase db) {
 		super(parent, true);
 		setSize(740, 611);
 		setUndecorated(true); // Remove title bar and border
 		setLocationRelativeTo(parent);
 		getContentPane().setLayout(new MigLayout("wrap, fillx, insets 25 35 20 35", "[170px,grow]", "[]"));
 
-		this.employee = employee;
+		this.employee = emp;
 		this.db = db;
 
 		initializeComponents(); // Initialize all components
@@ -90,8 +88,6 @@ class EmployeeEditWindow extends JDialog {
 		contactNumberField = new JTextField();
 		emailField = new JTextField();
 		rateField = new JTextField();
-		grossPayField = new JTextField();
-		netPayField = new JTextField();
 		workTypeCombobox = new JComboBox<>();
 		employmentTypeComboBox = new JComboBox<>();
 
@@ -171,8 +167,6 @@ class EmployeeEditWindow extends JDialog {
 		employmentTypeComboBox.setSelectedItem(employee.getEmploymentType());
 
 		rateField.setText(String.valueOf(employee.getRatePerHour()));
-		grossPayField.setText(String.valueOf(employee.getGrossPay()));
-		netPayField.setText(String.valueOf(employee.getNetPay()));
 
 		populateDepartmentComboBox(); // Populate departments
 		populateEmploymentTypeComboBox();
@@ -186,13 +180,13 @@ class EmployeeEditWindow extends JDialog {
 	private void setupLayout() {
 		// Add components to the panel in a structured way
 		panel = new JPanel(new MigLayout("wrap, fillx, insets 35 45 30 45", "[180px,grow][100px][fill][grow,fill]",
-				"[][][][][][][][][][][][][][][][][][][][][]"));
+				"[][][][][][][][][][][][][][][][][][][][][][][][]"));
 		getContentPane().add(panel, "alignx left,growy");
 		// Gender panel
 		JPanel genderPanel = new JPanel(new MigLayout("insets 0"));
 		genderPanel.add(radioMale);
 		genderPanel.add(radioFemale);
-		
+
 		// Add components to the main panel
 		panel.add(imagePanel, "cell 0 0 1 7,grow");
 
@@ -246,14 +240,6 @@ class EmployeeEditWindow extends JDialog {
 		panel.add(label_2, "cell 2 14,alignx left");
 		panel.add(rateField, "cell 3 14,growx");
 
-		JLabel label_1 = new JLabel("Gross Pay");
-		panel.add(label_1, "cell 2 15,alignx left");
-		panel.add(grossPayField, "cell 3 15,growx");
-
-		JLabel label = new JLabel("Net Pay");
-		panel.add(label, "cell 2 16,alignx trailing");
-		panel.add(netPayField, "cell 3 16,growx");
-
 		btnNewButton = new JButton("Cancel");
 		btnNewButton.addActionListener(new ActionListener() {
 			@Override
@@ -261,11 +247,11 @@ class EmployeeEditWindow extends JDialog {
 				dispose(); // Call method to cancel
 			}
 		});
-		panel.add(btnNewButton, "cell 0 18,growx");
+		panel.add(btnNewButton, "cell 0 21,growx");
 
 		// Buttons
 		saveBtn = new JButton("Save");
-		panel.add(saveBtn, "cell 3 18");
+		panel.add(saveBtn, "cell 3 21");
 	}
 
 	private void populateEmploymentTypeComboBox() {
@@ -422,8 +408,7 @@ class EmployeeEditWindow extends JDialog {
 			// If crucial fields are validated, check non-essential fields
 			// Ask user if they want to set empty non-crucial fields to default values
 			if (addressField.getText().isEmpty() || contactNumberField.getText().isEmpty()
-					|| emailField.getText().isEmpty() || grossPayField.getText().isEmpty()
-					|| netPayField.getText().isEmpty()) {
+					|| emailField.getText().isEmpty()) {
 
 				int response = JOptionPane.showConfirmDialog(null,
 						"Some optional fields are empty. Would you like to set them to default values?",
@@ -436,10 +421,7 @@ class EmployeeEditWindow extends JDialog {
 						contactNumberField.setText("");
 					if (emailField.getText().isEmpty())
 						emailField.setText("");
-					if (grossPayField.getText().isEmpty())
-						grossPayField.setText("0");
-					if (netPayField.getText().isEmpty())
-						netPayField.setText("0");
+
 				}
 			}
 
@@ -457,8 +439,6 @@ class EmployeeEditWindow extends JDialog {
 			}
 
 			employee.setRatePerHour(Double.parseDouble(rateField.getText()));
-			employee.setGrossPay(Double.parseDouble(grossPayField.getText()));
-			employee.setNetPay(Double.parseDouble(netPayField.getText()));
 			employee.setGender(radioMale.isSelected() ? "Male" : "Female");
 			employee.setContactNumber(contactNumberField.getText());
 			employee.setEmail(emailField.getText());
@@ -473,9 +453,11 @@ class EmployeeEditWindow extends JDialog {
 			}
 
 			employee.setDOB(DOB);
+
 			db.updateEmployee(employee); // Save data in the database
 
 			JOptionPane.showMessageDialog(null, "Employee data updated successfully.");
+
 			setVisible(false); // Hide the dialog window
 
 		} catch (NumberFormatException e) {

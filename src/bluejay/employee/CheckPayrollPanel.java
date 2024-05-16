@@ -71,7 +71,8 @@ public class CheckPayrollPanel extends JPanel implements Printable {
 
     private JButton createBackButton() {
         ImageIcon backIcon = new ImageIcon(getClass().getResource("/images/back.png"));
-        JButton backButton = new JButton(new ImageIcon(backIcon.getImage().getScaledInstance(35, 35, Image.SCALE_SMOOTH)));
+        JButton backButton = new JButton(
+                new ImageIcon(backIcon.getImage().getScaledInstance(35, 35, Image.SCALE_SMOOTH)));
         backButton.setOpaque(false);
         backButton.setContentAreaFilled(false);
         backButton.setBorderPainted(false);
@@ -80,11 +81,13 @@ public class CheckPayrollPanel extends JPanel implements Printable {
     }
 
     private JPanel createMainPane() {
-        JPanel mainPane = new JPanel(new MigLayout("wrap, fillx", "[grow]", "[][100px,center][][150px,center][][][][][]"));
+        JPanel mainPane = new JPanel(
+                new MigLayout("wrap, fillx", "[grow]", "[][100px,center][][150px,center][][][][][]"));
 
         model = new DefaultTableModel(
-            new String[]{"Date", "Employment Type", "Basic Salary", "Gross Pay", "Total Deduction", "Net Pay", "Salary Period"}, 0
-        );
+                new String[] { "Date", "Employment Type", "Basic Salary", "Gross Pay", "Total Deduction", "Net Pay",
+                        "Salary Period" },
+                0);
         table = new JTable(model);
 
         txtrPayslip = new JTextArea();
@@ -100,20 +103,20 @@ public class CheckPayrollPanel extends JPanel implements Printable {
         JButton refreshButton = new JButton("Refresh");
         refreshButton.addActionListener(e -> loadPayrollData());
         mainPane.add(refreshButton, "flowx,cell 0 0,alignx left");
-        
+
         JButton requestBTN = new JButton("Request");
         mainPane.add(requestBTN, "cell 0 0");
-                        
-                                JButton printButton = new JButton("Print PaySlip");
-                                printButton.addActionListener(e -> printPaySlip());
-                                
-                                JButton checkBTN = new JButton("check payslip");
-                                checkBTN.addActionListener(new ActionListener() {
-                                    public void actionPerformed(ActionEvent e) {
-                                    }
-                                });
-                                mainPane.add(checkBTN, "cell 0 4,alignx right");
-                                mainPane.add(printButton, "cell 0 5,alignx right");
+
+        JButton printButton = new JButton("Print PaySlip");
+        printButton.addActionListener(e -> printPaySlip());
+
+        JButton checkBTN = new JButton("check payslip");
+        checkBTN.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+            }
+        });
+        mainPane.add(checkBTN, "cell 0 4,alignx right");
+        mainPane.add(printButton, "cell 0 5,alignx right");
 
         return mainPane;
     }
@@ -124,7 +127,7 @@ public class CheckPayrollPanel extends JPanel implements Printable {
             db.loadEMPPayroll(currentEmployee, model, txtrPayslip); // Load payroll data
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Failed to load payroll data: " + ex.getMessage(), "Error",
-                JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -140,7 +143,7 @@ public class CheckPayrollPanel extends JPanel implements Printable {
                 job.print();
             } catch (PrinterException e) {
                 JOptionPane.showMessageDialog(this, "Failed to print: " + e.getMessage(), "Print Error",
-                    JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.ERROR_MESSAGE);
             }
         }
     }

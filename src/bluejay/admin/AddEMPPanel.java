@@ -93,7 +93,8 @@ public class AddEMPPanel extends JPanel {
 
 		setLayout(new MigLayout("center", "[center]", "[center]"));
 
-		panel = new JPanel(new MigLayout("wrap,fillx,insets 35 45 30 45", "[pref!,grow,fill]", "[][][grow][][][][][][][][][][][][][][][][][][][][][][][][][][][][]"));
+		panel = new JPanel(new MigLayout("wrap,fillx,insets 35 45 30 45", "[pref!,grow,fill]",
+				"[][][grow][][][][][][][][][][][][][][][][][][][][][][][][][][][][]"));
 		sp = new JScrollPane(panel);
 		sp.putClientProperty(FlatClientProperties.STYLE,
 				"arc:20;" + "[light]background:darken(@background,3%);" + "[dark]background:lighten(@background,3%)");
@@ -258,16 +259,16 @@ public class AddEMPPanel extends JPanel {
 		panel.add(lblRate, "cell 0 9");
 
 		panel.add(wageField, "cell 0 10,growx");
-		
-				JLabel lblNewLabel_7 = new JLabel("Employee's ID:");
-				panel.add(lblNewLabel_7, "flowx,cell 0 11,alignx center");
+
+		JLabel lblNewLabel_7 = new JLabel("Employee's ID:");
+		panel.add(lblNewLabel_7, "flowx,cell 0 11,alignx center");
 		JLabel label = new JLabel("Address");
-		
-				panel.add(label, "flowx,cell 0 13");
+
+		panel.add(label, "flowx,cell 0 13");
 		addressField = new JTextField();
 		addressField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter Address");
-		
-				panel.add(addressField, "cell 0 14,growx");
+
+		panel.add(addressField, "cell 0 14,growx");
 
 		panel.add(lblNewLabel_2, "cell 0 15,gapy 5");
 
@@ -328,6 +329,7 @@ public class AddEMPPanel extends JPanel {
 		panel.add(lblNewLabel_5, "cell 0 26");
 
 		passwordField = new JPasswordField();
+		passwordField.putClientProperty(FlatClientProperties.STYLE, "showRevealButton:true");
 		passwordField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter password");
 
 		panel.add(passwordField, "cell 0 27,growx");
@@ -338,7 +340,9 @@ public class AddEMPPanel extends JPanel {
 
 		btnNewButton = new JButton("Add Employee");
 		btnNewButton.addActionListener((ActionEvent e) -> {
-			saveEmployeeToDatabase();
+			if (validateFields()) {
+				saveEmployeeToDatabase();
+			}
 		});
 		panel.add(btnNewButton, "cell 0 29");
 		idField = new JTextField();
@@ -365,12 +369,12 @@ public class AddEMPPanel extends JPanel {
 			idField.setText("");
 			return; // Do not generate ID if either field is not selected
 		}
-	
+
 		try {
 			String workType = (String) workTypeCombobox.getSelectedItem();
 			String employmentType = (String) employmentTypeComboBox.getSelectedItem();
 			String abbreviation = db.getAbbreviationForWorkType(workType); // Method to fetch abbreviation
-	
+
 			String typeCode = "";
 			if ("Full Time".equals(employmentType)) {
 				typeCode = "F";
@@ -379,15 +383,15 @@ public class AddEMPPanel extends JPanel {
 			} else if ("Project Based".equals(employmentType)) {
 				typeCode = "PB";
 			}
-	
+
 			int lastId = db.getLastEmployeeId() + 1; // Increment last ID to ensure uniqueness
 			newId = abbreviation + String.format("%03d", lastId) + typeCode; // Formats ID with leading zeros
-	
+
 			while (db.checkEmployeeIdExists(newId)) { // Check if the ID already exists
 				lastId++; // Increment the ID if it exists
 				newId = abbreviation + String.format("%03d", lastId) + typeCode;
 			}
-	
+
 			idField.setText(newId); // Set the new ID in the text field
 			idField.setEnabled(true); // Enable the ID field after generation
 		} catch (SQLException e) {
@@ -641,10 +645,11 @@ public class AddEMPPanel extends JPanel {
 			return;
 		}
 
-		// Ensure required fields are filled
-		if (!validateAndHighlight()) {
-			JOptionPane.showMessageDialog(null, "Please correct the highlighted fields.", "Error",
-					JOptionPane.ERROR_MESSAGE);
+		// Ensure required fields are filled and username/password length is valid
+		if (!validateAndHighlight() || username.length() < 5 || password.length() < 5) {
+			JOptionPane.showMessageDialog(null,
+					"Please correct the highlighted fields and ensure username and password are at least 5 characters long.",
+					"Error", JOptionPane.ERROR_MESSAGE);
 			return; // Exit early if validation fails
 		}
 
@@ -679,6 +684,7 @@ public class AddEMPPanel extends JPanel {
 	}
 
 	private void clearFormFields() {
+		// Reset text fields
 		fNameField.setText("");
 		lNameField.setText("");
 		addressField.setText("");
@@ -690,5 +696,58 @@ public class AddEMPPanel extends JPanel {
 		passwordField.setText("");
 		imageLabel.setIcon(null);
 		selectedFile = null;
+
+		// Reset borders to default for all fields that might have been highlighted
+		resetFieldBorder(fNameField);
+		resetFieldBorder(lNameField);
+		resetFieldBorder(addressField);
+		resetFieldBorder(contactField);
+		resetFieldBorder(emailField);
+		resetFieldBorder(usernameField);
+		resetFieldBorder(passwordField);
+		DOBField.getJFormattedTextField().setBorder(UIManager.getBorder("TextField.border"));
+		if (uploadBtn != null) {
+			uploadBtn.setBorder(UIManager.getBorder("Button.border"));
+		}
+	}
+
+	// Helper method to reset field borders to default
+	private void resetFieldBorder(JTextField field) {
+		field.setBorder(UIManager.getBorder("TextField.border"));
+	}
+
+	// Method to validate all fields and show dialog messages for errors
+	private boolean validateFields() {
+		StringBuilder errors = new StringBuilder();
+		if (usernameField.getText().length() < 5) {
+			errors.append("Username must be at least 5 characters long.\n");
+		}
+		if (passwordField.getPassword().length < 5) {
+			errors.append("Password must be at least 5 characters long.\n");
+		}
+		if (fNameField.getText().trim().isEmpty()) {
+			errors.append("First name is required.\n");
+		}
+		if (lNameField.getText().trim().isEmpty()) {
+			errors.append("Last name is required.\n");
+		}
+		if (!emailField.getText().contains("@") || !emailField.getText().contains(".")) {
+			errors.append("Enter a valid email address.\n");
+		}
+		if (!isValidPhoneNumber(contactField.getText())) {
+			errors.append("Enter a valid phone number.\n");
+		}
+		if (!isValidDate(DOBField.getJFormattedTextField().getText())) {
+			errors.append("Enter a valid date of birth.\n");
+		}
+		if (!isValidImage(selectedFile)) {
+			errors.append("Select a valid image file.\n");
+		}
+
+		if (errors.length() > 0) {
+			JOptionPane.showMessageDialog(null, errors.toString(), "Validation Errors", JOptionPane.ERROR_MESSAGE);
+			return false;
+		}
+		return true;
 	}
 }

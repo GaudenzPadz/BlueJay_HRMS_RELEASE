@@ -8,6 +8,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
 import bluejayDB.EmployeeDatabase;
+import bluejay.Components.GUI;
 
 // Main application logic with splash screen and progress update
 public class Main {

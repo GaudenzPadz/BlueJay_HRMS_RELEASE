@@ -3,7 +3,9 @@ package bluejay.employee;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.GridLayout;
+import java.awt.Image;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -25,6 +27,7 @@ public class EmployeePanel extends JPanel {
 	private JPanel menuPanel;
 	private Employee employee;
 	private EmployeeDatabase db;
+	private JPanel imagePanel;
 
 	public EmployeePanel(Employee employee, EmployeeDatabase DB) {
 		this.employee = employee;
@@ -35,15 +38,22 @@ public class EmployeePanel extends JPanel {
 		JPanel headerPanel = new JPanel();
 		headerPanel.setBackground(new Color(0, 191, 255));
 		headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-		headerPanel.setLayout(new MigLayout("", "[30px][left][30][][][grow]", "[100px,grow,shrink 70]"));
+		headerPanel.setLayout(new MigLayout("", "[30px][150px,left][30][][][grow]", "[140px,grow 120,shrink 70]"));
+		
+		Image profile1 = employee.getProfileImage() != null ? employee.getProfileImage().getImage() : Main.frame.getScaledLogo().getImage();
 
-		// Icon Label
-		JLabel iconLabel = new JLabel();
-		Main.frame.setScaledLogo(200, 200);
-		iconLabel.setIcon(Main.frame.getScaledLogo());
-		iconLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
-		iconLabel.setForeground(Color.WHITE);
-		headerPanel.add(iconLabel, "cell 1 0,alignx left,growy");
+		imagePanel = new JPanel() {
+			@Override
+			protected void paintComponent(Graphics g) {
+				super.paintComponent(g);
+				if (profile1 != null) { // Draw the profile image if available
+					g.drawImage(profile1, 0, 0, getWidth(), getHeight(), null);
+				}
+			}
+		};
+		imagePanel.setBackground(null);
+
+		headerPanel.add(imagePanel, "cell 1 0,grow");
 
 		// Labels Panel
 		JPanel labelsPanel = new JPanel(new GridLayout(4, 1, 5, 5));
@@ -71,10 +81,10 @@ public class EmployeePanel extends JPanel {
 		headerPanel.add(labelsPanel, "cell 3 0,growx,aligny top");
 
 		add(headerPanel, BorderLayout.NORTH);
-		
-				JPanel notificationPanel = new JPanel();
-				notificationPanel.setBackground(null);
-				headerPanel.add(notificationPanel, "cell 5 0,grow");
+
+		JPanel notificationPanel = new JPanel();
+		notificationPanel.setBackground(null);
+		headerPanel.add(notificationPanel, "cell 5 0,grow");
 
 		// Menu Panel
 		menuPanel = new JPanel();
@@ -82,7 +92,8 @@ public class EmployeePanel extends JPanel {
 
 		add(menuPanel, BorderLayout.CENTER);
 
-		menuPanel.setLayout(new MigLayout("center", "[grow,fill][200][100][200][100][300][grow,fill]", "[100px][][10px:30px:50px][][][10px:30px:50px]"));
+		menuPanel.setLayout(new MigLayout("center", "[grow,fill][200][100][200][100][300][grow,fill]",
+				"[100px][][10px:30px:50px][][][10px:30px:50px]"));
 
 		ImageIcon profileIcon = new ImageIcon(getClass().getResource("/images/96x96/profile.png"));
 
@@ -120,17 +131,6 @@ public class EmployeePanel extends JPanel {
 		});
 		menuPanel.add(checkPayrollCBtn, "cell 5 1,growx,aligny center");
 
-
-		JPanel printPayrollCBtn = new ButtonPanel(Color.decode("#002C4B"), printIcon, "Print Payslip",
-				"click to print Payslip");
-		printPayrollCBtn.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-//
-			}
-		});
-		menuPanel.add(printPayrollCBtn, "cell 1 3,growx,aligny center");
-		
 		ImageIcon logoutIcon = new ImageIcon(getClass().getResource("/images/96x96/logout.png"));
 
 		JPanel logoutCBtn = new ButtonPanel(Color.decode("#002C4B"), logoutIcon, "Logout", "click to logout");

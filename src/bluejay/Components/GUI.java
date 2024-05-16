@@ -1,4 +1,4 @@
-package bluejay;
+package bluejay.Components;
 
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -15,6 +15,7 @@ import javax.swing.UIManager;
 
 import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.FlatIntelliJLaf;
+import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.extras.FlatAnimatedLafChange;
 
 public class GUI extends JFrame {
@@ -59,7 +60,9 @@ public class GUI extends JFrame {
 
 			} else {
 				FlatAnimatedLafChange.showSnapshot();
+				
 				FlatIntelliJLaf.setup();
+//				FlatLaf.updateUI();
 
 			}
 			UIManager.put("Button.arc", 800);
@@ -80,14 +83,14 @@ public class GUI extends JFrame {
 	// a method to use to replace the panels
 	public void replaceContentPane(String title, JPanel form, LayoutManager manager) {
 		EventQueue.invokeLater(() -> {
-//			FlatAnimatedLafChange.showSnapshot();
+			FlatAnimatedLafChange.showSnapshot();
 			getContentPane().removeAll();
 			getContentPane().revalidate();
 			getContentPane().repaint();
 			getContentPane().setLayout(manager);
 			this.setTitle(title);
 			setContentPane(form);
-//			FlatAnimatedLafChange.hideSnapshotWithAnimation();
+			FlatAnimatedLafChange.hideSnapshotWithAnimation();
 		});
 	}
 

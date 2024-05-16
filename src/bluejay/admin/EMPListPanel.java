@@ -1,13 +1,10 @@
 package bluejay.admin;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
+import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Font;
-import java.awt.Image;
-import java.awt.Component;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.List;
@@ -15,7 +12,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import javax.swing.AbstractCellEditor;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
@@ -28,13 +24,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.RowFilter;
-import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
@@ -54,7 +47,7 @@ public class EMPListPanel extends JPanel {
 	private JPopupMenu popupMenu;
 	private JMenuItem menuItemRemove, menuItemEdit;
 	public final Map<String, String> workTypeMap = new HashMap<>();
-	private String[] column = { "Employee ID", "First Name", "Last Name", "Address", "Department", "Employment Type",
+	private String[] column = { "Employee ID", "First Name", "Last Name", "Department", "Employment Type",
 			"Work Type", "Basic Salary", "Actions" };
 	private EmployeeDatabase db;
 	private DefaultTableModel model = new DefaultTableModel(column, 0) {
@@ -62,45 +55,40 @@ public class EMPListPanel extends JPanel {
 
 		@Override
 		public boolean isCellEditable(int rowIndex, int columnIndex) {
-			boolean[] columnEditables = new boolean[] { false, true, true, true, true, true, true, false, true };
+			boolean[] columnEditables = new boolean[] { false, true, true, true, true, true, false, true };
 			return columnEditables[columnIndex];
 		}
 	};
-	private JPanel panel;
-	private JButton editBtn;
-	private JButton saveBtn;
-	private JLabel errorLabel;
 
 	public EMPListPanel(EmployeeDatabase DB) {
 		this.db = DB;
-
+	
 		table = new JTable(model);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-
+	
 		TableColumnModel columnModel = table.getColumnModel();
-
-		columnModel.getColumn(0).setPreferredWidth(130);// id
+	
+		columnModel.getColumn(0).setPreferredWidth(100); // id
 		columnModel.getColumn(0).setResizable(false);
-		columnModel.getColumn(1).setPreferredWidth(120);// first name
-		columnModel.getColumn(2).setPreferredWidth(120);// last name
-		columnModel.getColumn(3).setPreferredWidth(200);// address
-		columnModel.getColumn(4).setPreferredWidth(100);// department
-		columnModel.getColumn(5).setPreferredWidth(130);// employment type
-		columnModel.getColumn(6).setPreferredWidth(240);// work type
-		columnModel.getColumn(7).setPreferredWidth(100);// basic salary
-		columnModel.getColumn(8).setPreferredWidth(200);// actions
-
-		table.getColumnModel().getColumn(8).setCellRenderer(new ActionsRenderer());
-		table.getColumnModel().getColumn(8).setCellEditor(new ActionsEditor());
-
+		columnModel.getColumn(1).setPreferredWidth(90); // first name
+		columnModel.getColumn(2).setPreferredWidth(100); // last name
+		columnModel.getColumn(3).setPreferredWidth(100); // department
+		columnModel.getColumn(4).setPreferredWidth(100); // employment type
+		columnModel.getColumn(5).setPreferredWidth(200); // work type
+		columnModel.getColumn(6).setPreferredWidth(80); // basic salary
+		columnModel.getColumn(7).setPreferredWidth(165); // actions
+	
+		table.getColumnModel().getColumn(7).setCellRenderer(new ActionsRenderer());
+		table.getColumnModel().getColumn(7).setCellEditor(new ActionsEditor());
+	
 		table.setToolTipText("Right Click For Options"); // floating text on the table
 		table.setCellSelectionEnabled(true);
 		table.setFont(new Font("Serif", Font.PLAIN, 18));
 		table.setRowHeight(40);
-
+	
 		refreshTable();
 		popupMenu();
-
+	
 		searchPanel = new JPanel();
 		JTextField searchField = new JTextField(10);
 		searchField.getDocument().addDocumentListener(new DocumentListener() {
@@ -108,12 +96,12 @@ public class EMPListPanel extends JPanel {
 			public void insertUpdate(DocumentEvent e) {
 				updateTable();
 			}
-
+	
 			@Override
 			public void removeUpdate(DocumentEvent e) {
 				updateTable();
 			}
-
+	
 			private void updateTable() {
 				String searchText = searchField.getText().trim();
 				if (searchText.isEmpty()) {
@@ -124,22 +112,22 @@ public class EMPListPanel extends JPanel {
 					searchTable(searchText); // Perform the search as defined earlier
 				}
 			}
-
+	
 			private void searchTable(String searchText) {
 				TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
 				table.setRowSorter(sorter);
-
+	
 				// Filter based on matching case-insensitive cells
 				RowFilter<DefaultTableModel, Object> filter = RowFilter.regexFilter("(?i)" + searchText);
 				sorter.setRowFilter(filter);
-
+	
 				if (searchText.trim().length() == 0) {
 					sorter.setRowFilter(null);
 				} else {
 					sorter.setRowFilter(RowFilter.regexFilter("(?i)" + searchText));
 				}
 			}
-
+	
 			@Override
 			public void changedUpdate(DocumentEvent e) {
 				// I DONT KNOW THE USE OF THIS ONE
@@ -148,120 +136,14 @@ public class EMPListPanel extends JPanel {
 		searchPanel.setLayout(new MigLayout("", "[][40px][200.00px][][grow]", "[20px]"));
 		searchPanel.add(new JLabel("Search: "), "cell 1 0,alignx left,aligny center");
 		searchPanel.add(searchField, "cell 2 0,growx,aligny top");
-
+	
 		JScrollPane scrollPane = new JScrollPane(table);
 		setLayout(new BorderLayout(10, 5));
 		add(searchPanel, BorderLayout.NORTH);
-
-		errorLabel = new JLabel("");
-		errorLabel.setForeground(Color.RED);
-		searchPanel.add(errorLabel, "cell 4 0,alignx leading,aligny center");
+	
 		add(scrollPane, BorderLayout.CENTER);
-
-		panel = new JPanel();
-		FlowLayout flowLayout = (FlowLayout) panel.getLayout();
-		flowLayout.setAlignment(FlowLayout.RIGHT);
-		add(panel, BorderLayout.SOUTH);
-
-		ImageIcon saveIcon = new ImageIcon(getClass().getResource("/images/save.png"));
-		saveBtn = new JButton(new ImageIcon(saveIcon.getImage().getScaledInstance(30, 30, Image.SCALE_SMOOTH)));
-		saveBtn.setHorizontalAlignment(SwingConstants.LEADING);
-		saveBtn.setOpaque(false);
-		saveBtn.setContentAreaFilled(false);
-		saveBtn.setBorderPainted(false);
-		saveBtn.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				saveToDB();
-
-			}
-		});
-		saveBtn.setEnabled(false);
-		panel.add(saveBtn);
-
-		ImageIcon writeIcon = new ImageIcon(getClass().getResource("/images/write.png"));
-		editBtn = new JButton(new ImageIcon(writeIcon.getImage().getScaledInstance(30, 30, Image.SCALE_SMOOTH)));
-		editBtn.setHorizontalAlignment(SwingConstants.LEADING);
-		editBtn.setOpaque(false);
-		editBtn.setContentAreaFilled(false);
-		editBtn.setBorderPainted(false);
-		editBtn.addActionListener((ActionEvent e) -> {
-			if (table.getSelectedRow() == -1) {
-				JOptionPane.showMessageDialog(null, "Please select an employee to edit.", "Error",
-						JOptionPane.ERROR_MESSAGE);
-				return;
-			}
-			editSelectedRow(table.getSelectedRow());
-		});
-		panel.add(editBtn);
-
-		// Add a table model listener to track changes in the table
-		model.addTableModelListener(new TableModelListener() {
-
-			@Override
-			public void tableChanged(TableModelEvent e) {
-				// Enable or disable save button based on modifications
-				if (hasModifications()) {
-					System.out.println("TRUE");
-					saveBtn.setEnabled(true);
-				} else {
-					System.out.println("FALSE");
-					saveBtn.setEnabled(false);
-				}
-			}
-
-		});
 	}
-
-	// Method to check if there are modifications in the table
-	private boolean hasModifications() {
-		for (int i = 0; i < model.getRowCount(); i++) {
-			for (int j = 0; j < model.getColumnCount(); j++) {
-				Object originalValue = table.getValueAt(i, j);
-				Object updatedValue = model.getValueAt(i, j);
-				if (originalValue == null && updatedValue != null
-						|| originalValue != null && !originalValue.equals(updatedValue)) {
-					return false; // Found a modification
-				}
-			}
-		}
-		return true; // No modifications found
-	}
-
-	protected void saveToDB() {
-		int selectedRow = table.getSelectedRow();
-		if (selectedRow == -1) {
-			errorLabel.setText("No row selected, select a row to save changes");
-
-			return; // No row selected, nothing to update
-		}
-
-		// Retrieve updated information from the table
-		String employeeId = (String) table.getValueAt(selectedRow, 0);
-		String updatedFirstName = (String) table.getValueAt(selectedRow, 1);
-		String updatedLastName = (String) table.getValueAt(selectedRow, 2);
-		String updatedAddress = (String) table.getValueAt(selectedRow, 3);
-		String updatedDepartment = (String) table.getValueAt(selectedRow, 4);
-		String updatedWorkType = (String) table.getValueAt(selectedRow, 4);
-		Object value = table.getValueAt(selectedRow, 5);
-		double updatedRate;
-		if (value instanceof Double) {
-			updatedRate = (Double) value;
-		} else {
-			updatedRate = Double.parseDouble(value.toString());
-		}
-
-		// Create an Employee object with the updated information
-		Employee updatedEmployee = new Employee(employeeId, updatedFirstName, updatedLastName, updatedAddress,
-				updatedDepartment, updatedWorkType, updatedRate);
-
-		saveBtn.setEnabled(false);
-		// Update the employee information in the database
-		db.updateEmployee(updatedEmployee);
-		refreshTable();
-	}
-
-	// Custom renderer for the "Actions" column
+		// Custom renderer for the "Actions" column
 	private class ActionsRenderer extends JPanel implements TableCellRenderer {
 		private final JButton editButton = new JButton("Edit");
 		private final JButton deleteButton = new JButton("Delete");
@@ -362,7 +244,7 @@ public class EMPListPanel extends JPanel {
 					JOptionPane.ERROR_MESSAGE);
 			return;
 		}
-
+	
 		String employeeId = table.getValueAt(row, 0).toString();
 		try {
 			Employee employee = db.getEmployeeById(employeeId);
@@ -370,16 +252,19 @@ public class EMPListPanel extends JPanel {
 				JOptionPane.showMessageDialog(null, "Employee not found.", "Error", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
-
+	
 			JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(EMPListPanel.this);
 			EmployeeEditWindow editWindow = new EmployeeEditWindow(parentFrame, employee, db);
 			editWindow.setVisible(true);
+	
+			// Refresh the table after the dialog is closed
+			refreshTable();
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(null, "Failed to retrieve employee data: " + e.getMessage(), "Database Error",
 					JOptionPane.ERROR_MESSAGE);
 		}
 	}
-
+	
 	// Method to delete the selected row
 	private void deleteSelectedRow(int row) {
 		if (row == -1) {
@@ -415,7 +300,7 @@ public class EMPListPanel extends JPanel {
 					while (rs.next()) {
 						publish(new Object[] {
 								rs.getString("employee_id"), rs.getString("first_name"),
-								rs.getString("last_name"), rs.getString("address"), rs.getString("department"),
+								rs.getString("last_name"), rs.getString("department"),
 								rs.getString("employment_type"), rs.getString("work_type"), rs.getDouble("rate") });
 					}
 				}

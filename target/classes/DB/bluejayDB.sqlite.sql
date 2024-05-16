@@ -1,12 +1,4 @@
 BEGIN TRANSACTION;
-CREATE TABLE IF NOT EXISTS "deductions" (
-	"id"	INTEGER,
-	"SSS"	INTEGER,
-	"PAG_IBIG"	INTEGER,
-	"PHILHEALTH"	INTEGER,
-	"advanced"	INTEGER,
-	PRIMARY KEY("id")
-);
 CREATE TABLE IF NOT EXISTS "department" (
 	"department_id"	INTEGER,
 	"department_name"	TEXT,
@@ -25,15 +17,7 @@ CREATE TABLE IF NOT EXISTS "types" (
 	"abbreviation"	TEXT,
 	"rate_per_hour"	INTEGER,
 	"rate_per_project"	INTEGER,
-	PRIMARY KEY("id"),
-	FOREIGN KEY("department_id") REFERENCES "department"("department_id")
-);
-CREATE TABLE IF NOT EXISTS "grossPayTable" (
-	"id"	INTEGER,
-	"date_created"	TEXT,
-	"employee_id"	TEXT,
-	"name"	TEXT,
-	"grossPay"	INTEGER,
+	FOREIGN KEY("department_id") REFERENCES "department"("department_id"),
 	PRIMARY KEY("id")
 );
 CREATE TABLE IF NOT EXISTS "employees" (
@@ -55,10 +39,10 @@ CREATE TABLE IF NOT EXISTS "employees" (
 	"profile_image"	BLOB,
 	"date_hired"	INTEGER,
 	"DOB"	INTEGER,
-	PRIMARY KEY("id"),
-	FOREIGN KEY("department_id") REFERENCES "department"("department_id"),
 	FOREIGN KEY("work_type_id") REFERENCES "types"("id"),
-	FOREIGN KEY("employment_type_id") REFERENCES "employment_type"("id")
+	FOREIGN KEY("employment_type_id") REFERENCES "employment_type"("id"),
+	FOREIGN KEY("department_id") REFERENCES "department"("department_id"),
+	PRIMARY KEY("id")
 );
 CREATE TABLE IF NOT EXISTS "attendance" (
 	"id"	INTEGER,
@@ -103,16 +87,34 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"role"	TEXT,
 	PRIMARY KEY("ID")
 );
-INSERT INTO "deductions" ("id","SSS","PAG_IBIG","PHILHEALTH","advanced") VALUES (1,570,100,500,NULL);
+CREATE TABLE IF NOT EXISTS "deductions" (
+	"id"	INTEGER,
+	"SSS"	REAL,
+	"PAG_IBIG"	REAL,
+	"PHILHEALTH"	REAL,
+	"advanced"	REAL,
+	PRIMARY KEY("id")
+);
+CREATE TABLE IF NOT EXISTS "grossPayTable" (
+	"id"	INTEGER,
+	"date_created"	TEXT,
+	"employee_id"	TEXT,
+	"name"	TEXT,
+	"grossPay"	INTEGER,
+	"overtimeHours"	INTEGER,
+	"daysWorked"	INTEGER,
+	PRIMARY KEY("id")
+);
 INSERT INTO "department" ("department_id","department_name","department_description") VALUES (1,'Welding Department','Welders Department'),
- (2,'Human Resources Department','HR Team');
+ (2,'Human Resources Department','HR');
 INSERT INTO "employment_type" ("id","type") VALUES (1,'Full Time'),
  (2,'Part Time'),
  (3,'Project Based');
-INSERT INTO "types" ("id","department_id","work_type","abbreviation","rate_per_hour","rate_per_project") VALUES (1,1,'Shielded Metal Arc Welding','SMAW',420,NULL),
- (2,1,'Metal Inert Gas Welding','MIGW',93,NULL),
- (3,1,'Flux-cored Arc Welding','FCAW',150,NULL),
- (4,1,'Gas Tungsten Arc Welding','GTAW',98,NULL),
- (5,2,'HR Head','HR',10000,NULL);
+INSERT INTO "types" ("id","department_id","work_type","abbreviation","rate_per_hour","rate_per_project") VALUES (1,1,'Shielded Metal Arc Welding','SMAW',89,NULL),
+ (2,1,'Metal Inert Gas Welding','MIGW',83,NULL),
+ (3,1,'Flux-cored Arc Welding','FCAW',88,NULL),
+ (4,1,'Gas Tungsten Arc Welding','GTAW',85,NULL),
+ (5,2,'HR Head','HR',150,NULL);
 INSERT INTO "users" ("ID","employee_ID","name","username","password","role") VALUES (0,NULL,'ADMIN','admin','admin','ADMIN');
+INSERT INTO "deductions" ("id","SSS","PAG_IBIG","PHILHEALTH","advanced") VALUES (1,0.04,0.02,0.04,NULL);
 COMMIT;

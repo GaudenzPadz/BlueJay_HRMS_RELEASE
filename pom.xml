@@ -1,6 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<properties>
+		<swing-datetime-picker-systemPath>${basedir}/swing-datetime-picker-1.2.0.jar</swing-datetime-picker-systemPath>
+	</properties>
+
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>BJ_HRMS</groupId>
 	<artifactId>HRMS</artifactId>
@@ -20,11 +23,10 @@
 			<version>3.4.1</version>
 		</dependency>
 
-		<!-- Extras for animations-->
 		<dependency>
 			<groupId>com.formdev</groupId>
 			<artifactId>flatlaf-extras</artifactId>
-			<version>3.2.1</version>
+			<version>3.4.1</version>
 		</dependency>
 
 		<dependency>
@@ -36,13 +38,21 @@
 		<dependency>
 			<groupId>com.miglayout</groupId>
 			<artifactId>miglayout-swing</artifactId>
-			<version>5.2</version>
+			<version>11.3</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.itextpdf</groupId>
 			<artifactId>itextpdf</artifactId>
 			<version>5.5.13.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>raven.datetime</groupId>
+			<artifactId>swing-datetime-picker</artifactId>
+			<version>1.2.0</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/library/swing-datetime-picker-1.2.0.jar</systemPath>
 		</dependency>
 
 	</dependencies>

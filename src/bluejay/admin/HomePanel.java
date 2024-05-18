@@ -1,12 +1,12 @@
 package bluejay.admin;
 
-import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.Image;
 import java.awt.event.ActionListener;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -14,7 +14,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
+
 import com.formdev.flatlaf.FlatClientProperties;
+
+import bluejay.Main;
 import bluejayDB.EmployeeDatabase;
 import net.miginfocom.swing.MigLayout;
 
@@ -24,14 +27,13 @@ public class HomePanel extends JPanel {
     private EmployeeDatabase db;
     private ImageIcon listIcon = new ImageIcon(getClass().getResource("/images/list.png"));
     private ImageIcon recruitmentIcon = new ImageIcon(getClass().getResource("/images/recruitment.png"));
-    private ImageIcon payrollIcon = new ImageIcon(getClass().getResource("/images/payroll.png")); // New icon for Payroll Overview
-    JPanel mainPanel;
+    private ImageIcon payrollIcon = new ImageIcon(getClass().getResource("/images/payroll.png")); // New icon for
+                                                                                                  // Payroll Overview
     private JLabel currentTimeLabel; // Label to display current time
     private Timer timer; // Timer for updating time label
 
-    public HomePanel(EmployeeDatabase DB, JPanel mainPanel) {
+    public HomePanel(EmployeeDatabase DB) {
         this.db = DB;
-        this.mainPanel = mainPanel;
         JPanel dash = dashboard();
         add(dash);
         // Add the time panel
@@ -49,19 +51,9 @@ public class HomePanel extends JPanel {
 
         // Create action listeners for the dashboard buttons
         ActionListener viewEmployeeListListener = e -> {
-            mainPanel.removeAll();
-            mainPanel.setLayout(new BorderLayout());
-            mainPanel.add(new EMPListPanel(db), BorderLayout.CENTER);
-            mainPanel.revalidate();
-            mainPanel.repaint();
         };
 
         ActionListener attendanceListener = e -> {
-            mainPanel.removeAll();
-            mainPanel.setLayout(new BorderLayout());
-            mainPanel.add(new AttendancePanel(db), BorderLayout.CENTER);
-            mainPanel.revalidate();
-            mainPanel.repaint();
         };
 
         try {
@@ -71,8 +63,10 @@ public class HomePanel extends JPanel {
             int totalCheckInsToday = db.countCheckInsToday(); // Method to count check-ins for today
             int newHiresToday = db.countNewEmployeesToday(); // Method to count new hires today
 
-            // Calculate upcoming pay day (replace this with your actual logic to calculate upcoming pay day)
-            String upcomingPayDay = calculateUpcomingPayDay(); // Assuming a method calculateUpcomingPayDay() is implemented
+            // Calculate upcoming pay day (replace this with your actual logic to calculate
+            // upcoming pay day)
+            String upcomingPayDay = calculateUpcomingPayDay(); // Assuming a method calculateUpcomingPayDay() is
+                                                               // implemented
 
             // Create dashboard panels with dynamic data
             JPanel empOverview = dashboardPanel(listIcon, "Employee Overview", "Total Employees:",
@@ -85,7 +79,11 @@ public class HomePanel extends JPanel {
                     "View Attendance", attendanceListener);
 
             // Create Payroll Overview panel
-            JPanel payrollOverview = dashboardPanel(payrollIcon, "Payroll Overview", "Upcoming PayDay:", upcomingPayDay, // Replace "DD/MM/YYYY" with actual date
+            JPanel payrollOverview = dashboardPanel(payrollIcon, "Payroll Overview", "Upcoming PayDay:", upcomingPayDay, // Replace
+                                                                                                                         // "DD/MM/YYYY"
+                                                                                                                         // with
+                                                                                                                         // actual
+                                                                                                                         // date
                     null, null, null, null); // Set null for the body and total labels, and action listener
 
             panel.add(empOverview, "");
@@ -99,7 +97,8 @@ public class HomePanel extends JPanel {
     }
 
     private String calculateUpcomingPayDay() {
-        // This method should calculate the upcoming pay day based on your business logic
+        // This method should calculate the upcoming pay day based on your business
+        // logic
         // For demonstration purposes, let's assume a fixed value here
         return "DD/MM/YYYY"; // Replace "DD/MM/YYYY" with the actual upcoming pay day
     }
@@ -158,7 +157,8 @@ public class HomePanel extends JPanel {
                 "arc:20;" + "[light]background:darken(@background,3%);" + "[dark]background:lighten(@background,3%)");
 
         // Adding current time
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm:ss a"); // Updated pattern for 12-hour format with AM/PM
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm:ss a"); // Updated pattern for 12-hour format
+                                                                                 // with AM/PM
         LocalDateTime now = LocalDateTime.now();
         String currentTime = formatter.format(now);
 
@@ -173,7 +173,8 @@ public class HomePanel extends JPanel {
 
     // Method to update the time label
     private void updateTime() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm:ss a"); // Updated pattern for 12-hour format with AM/PM
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm:ss a"); // Updated pattern for 12-hour format
+                                                                                 // with AM/PM
         LocalDateTime now = LocalDateTime.now();
         String currentTime = formatter.format(now);
         currentTimeLabel.setText(currentTime);

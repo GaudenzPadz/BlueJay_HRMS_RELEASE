@@ -44,7 +44,7 @@ public class AdminPanel extends JPanel {
 		mainPanel = new JPanel();
 
 		mainPanel.setLayout(new BorderLayout(0, 0));
-		mainPanel.add(new HomePanel(DB, mainPanel));
+		mainPanel.add(new HomePanel(DB));
 
 		sidePanel = SidePanel();
 		add(sidePanel, BorderLayout.WEST);
@@ -83,7 +83,7 @@ public class AdminPanel extends JPanel {
 				// Show HomePanel
 				mainPanel.removeAll();
 				mainPanel.setLayout(new BorderLayout());
-				mainPanel.add(new HomePanel(DB, mainPanel));
+				mainPanel.add(new HomePanel(DB));
 				mainPanel.revalidate();
 				mainPanel.repaint();
 			}

@@ -31,6 +31,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.text.JTextComponent;
 
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
@@ -47,7 +48,7 @@ public class PayrollPanel extends JPanel implements Printable {
 	private JTextField tfEmployeeID, tfEmployeeName, tfEmployeeDepartment, tfEmployeeWorkType, tfEmpType, tfRatePerHour,
 			tfDaysWorked, tfOvertimeHours, tfGrossPay, tfDeductionsSSS, tfDeductionsPagIbig,
 			tfDeductionsPhilHealth, tfTotalDeductions, tfAdvanced, tfBonus, tfNetPay, PBRatePerProjectField,
-			PBNumOfProjectsField;
+			PBNumOfProjectsField, tfRatePerDay;
 	private JTable payrollHistoryTable;
 	private EmployeeDatabase db;
 	private List<Employee> employees;
@@ -60,6 +61,7 @@ public class PayrollPanel extends JPanel implements Printable {
 			0);
 	private JLabel GrossPayLabel;
 	private JLabel RatePerHourLabel;
+	private JLabel RatePerDayLabel;
 	private JLabel DaysWorkedLabel;
 	private JLabel OvertimeHoursLabel;
 	private JLabel BonusLabel;
@@ -96,6 +98,7 @@ public class PayrollPanel extends JPanel implements Printable {
 		tfEmployeeDepartment = new JTextField(20);
 		tfEmployeeWorkType = new JTextField(20);
 		tfRatePerHour = new JTextField(20);
+		tfRatePerDay = new JTextField(20);
 		tfDaysWorked = new JTextField("0"); // Set default text as "0"
 		tfGrossPay = new JTextField();
 		tfDeductionsSSS = new JTextField();
@@ -103,11 +106,8 @@ public class PayrollPanel extends JPanel implements Printable {
 		tfDeductionsPhilHealth = new JTextField();
 		tfAdvanced = new JTextField();
 		payrollHistoryTable = new JTable(payrollHistoryTableModel);
+		tfNetPay = new JTextField();
 		tfOvertimeHours = new JTextField();
-		tfBonus = new JTextField();
-		tfNetPay = new JTextField();
-		tfDaysWorked = new JTextField();
-		tfNetPay = new JTextField();
 
 		PBRatePerProjectField = new JTextField();
 		PBNumOfProjectsField = new JTextField(10);
@@ -295,7 +295,7 @@ public class PayrollPanel extends JPanel implements Printable {
 
 	private JPanel fullTimePane() {
 		JPanel fullTimePanel = new JPanel(
-				new MigLayout("fill,insets 10", "[95px][86px]", "[][][][][][][][][][][][][][][]"));
+				new MigLayout("fill,insets 10", "[95px][86px,grow]", "[][][][][][][][][][][][][][][]"));
 		fullTimePanel.setBorder(new BevelBorder(BevelBorder.LOWERED));
 
 		JLabel lblSalary = new JLabel("Full Time Salary");
@@ -306,33 +306,49 @@ public class PayrollPanel extends JPanel implements Printable {
 		fullTimePanel.add(GrossPayLabel, "cell 0 1");
 
 		fullTimePanel.add(tfGrossPay, "cell 1 1,growx");
+		tfGrossPay.setEditable(false);
 
 		RatePerHourLabel = new JLabel("Rate Per Hour:");
 		fullTimePanel.add(RatePerHourLabel, "cell 0 2");
+		tfRatePerHour.setEditable(false);
 
 		fullTimePanel.add(tfRatePerHour, "cell 1 2,growx");
 
+		RatePerDayLabel = new JLabel("Rate Per Days:");
+		fullTimePanel.add(RatePerDayLabel, "cell 0 3,alignx left");
+		tfRatePerDay.setEditable(false);
+		
+		tfRatePerDay = new JTextField();
+		tfRatePerDay.setEditable(false);
+		fullTimePanel.add(tfRatePerDay, "cell 1 3,growx");
+		tfRatePerDay.setColumns(10);
+		
 		DaysWorkedLabel = new JLabel("Days Worked:");
-		fullTimePanel.add(DaysWorkedLabel, "cell 0 3");
-		fullTimePanel.add(tfDaysWorked, "cell 1 3,growx");
+		fullTimePanel.add(DaysWorkedLabel, "cell 0 4");
+		tfDaysWorked = new JTextField();
+		fullTimePanel.add(tfDaysWorked, "cell 1 4,growx");
+		tfDaysWorked.setEditable(false);
 
 		OvertimeHoursLabel = new JLabel("Overtime Hours:");
-		fullTimePanel.add(OvertimeHoursLabel, "cell 0 4");
-
-		fullTimePanel.add(tfOvertimeHours, "cell 1 4,growx");
+		fullTimePanel.add(OvertimeHoursLabel, "cell 0 5");
+		tfOvertimeHours.setEditable(false);
+		fullTimePanel.add(tfOvertimeHours, "cell 1 5,growx");
 
 		BonusLabel = new JLabel("Bonus");
-		fullTimePanel.add(BonusLabel, "cell 0 5");
-
-		fullTimePanel.add(tfBonus, "cell 1 5,growx");
+		fullTimePanel.add(BonusLabel, "cell 0 6");
+		tfBonus = new JTextField();
+		tfBonus.setEditable(false);
+		
+				fullTimePanel.add(tfBonus, "cell 1 6,growx");
 
 		NetPayLabel = new JLabel("Net Pay:");
-		fullTimePanel.add(NetPayLabel, "cell 0 6,alignx left");
-
+		fullTimePanel.add(NetPayLabel, "cell 0 7,alignx left");
 		JButton fullTimeBtnCalculate = new JButton("Calculate Full Time");
 		fullTimeBtnCalculate.addActionListener(e -> fullTimeMethodCalculation());
-
-		fullTimePanel.add(tfNetPay, "cell 1 6,growx");
+		tfNetPay = new JTextField();
+		tfNetPay.setEditable(false);
+		
+				fullTimePanel.add(tfNetPay, "cell 1 7,growx");
 		fullTimePanel.add(fullTimeBtnCalculate, "cell 0 13 2 1,growx");
 
 		return fullTimePanel;
@@ -387,14 +403,16 @@ public class PayrollPanel extends JPanel implements Printable {
 		partTimePanel.add(new JLabel("Rate per Day"), "cell 0 2,alignx left");
 
 		partTimePanel.add(tfRatePerHour, "cell 1 2,growx");
-
+		
+		partTimePanel.add(tfRatePerDay, "cell 1 3,growx");
+		
 		partTimePanel.add(new JLabel("Days Worked"), "cell 0 3,alignx left");
 
-		partTimePanel.add(tfDaysWorked, "cell 1 3,growx");
+		partTimePanel.add(tfDaysWorked, "cell 1 4,growx");
 
 		partTimePanel.add(new JLabel("Net Pay:"), "cell 0 4,alignx left");
 
-		partTimePanel.add(tfNetPay, "cell 1 4,growx");
+		partTimePanel.add(tfNetPay, "cell 1 5,growx");
 
 		JButton partTimeBtnCalculate = new JButton("Calculate Part Time");
 		partTimeBtnCalculate.addActionListener(e -> partTimeMethodCalculation());
@@ -448,7 +466,7 @@ public class PayrollPanel extends JPanel implements Printable {
 		int numberOfProjectsCompleted = Integer.parseInt(PBNumOfProjectsField.getText());
 
 		double totalDeductions = sss + pagIbig + philHealth + advanced;
-		double netPay = grossPay - totalDeductions;
+		double netPay = ratePerProject * numberOfProjectsCompleted - totalDeductions;
 
 		// Update the form with calculated values
 		tfNetPay.setText(String.format("%.2f", netPay));
@@ -493,6 +511,7 @@ public class PayrollPanel extends JPanel implements Printable {
 			double overAllDeduction = grossPayField * deductions;
 			System.out.println("Overall Deductions: " + String.format("%.2f", overAllDeduction));
 			// Calculate net pay
+			double ratePerDay = ratePerHour * 8;
 			double netPay = grossPayField + bonus - overAllDeduction;
 			System.out.println("Net Pay: " + netPay);
 
@@ -553,29 +572,29 @@ public class PayrollPanel extends JPanel implements Printable {
 	private void refreshTable(DefaultTableModel tableModel) {
 		// Clear the existing data
 		tableModel.setRowCount(0);
-	
+
 		// Fetch the updated payroll data from the database
 		List<Payroll> payrolls = db.getAllPayrolls();
-	
+
 		// Add the new data to the table model
 		for (Payroll payroll : payrolls) {
-			tableModel.addRow(new Object[]{
-				payroll.getEmployeeId(),
-				payroll.getEmployeeName(),
-				payroll.getEmployeeDepartment(),
-				payroll.getEmployeeWorkType(),
-				payroll.getGrossPay(),
-				payroll.getRatePerHour(),
-				payroll.getDaysWorked(),
-				payroll.getOvertimeHours(),
-				payroll.getBonus(),
-				payroll.getTotalDeductions(),
-				payroll.getNetPay(),
-				payroll.getDate()
+			tableModel.addRow(new Object[] {
+					payroll.getEmployeeId(),
+					payroll.getEmployeeName(),
+					payroll.getEmployeeDepartment(),
+					payroll.getEmployeeWorkType(),
+					payroll.getGrossPay(),
+					payroll.getRatePerHour(),
+					payroll.getDaysWorked(),
+					payroll.getOvertimeHours(),
+					payroll.getBonus(),
+					payroll.getTotalDeductions(),
+					payroll.getNetPay(),
+					payroll.getDate()
 			});
 		}
 	}
-	
+
 	private void clearFields() {
 		tfEmployeeID.setText("");
 		tfEmployeeName.setText("");
@@ -628,6 +647,7 @@ public class PayrollPanel extends JPanel implements Printable {
 			int daysWorked = db.countDaysWorked(selectedEmployee.getEmployeeId());
 			int overtimeHours = db.sumOvertimeHours(selectedEmployee.getEmployeeId());
 			tfDaysWorked.setText(String.valueOf(daysWorked));
+			tfRatePerDay.setText(String.valueOf(selectedEmployee.getRatePerHour() * 8));
 			tfOvertimeHours.setText(String.valueOf(overtimeHours));
 
 			loadDeductions();
@@ -639,6 +659,7 @@ public class PayrollPanel extends JPanel implements Printable {
 	}
 
 	private double grossPay;
+	private JTextField RatePerDay;
 
 	private void displayGrossPay() {
 		if (selectedEmployee != null) {

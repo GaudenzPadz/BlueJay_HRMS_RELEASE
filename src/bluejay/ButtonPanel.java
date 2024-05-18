@@ -13,9 +13,6 @@ public class ButtonPanel extends JPanel {
     private boolean isHovered = false;
     private boolean isPressed = false;
 
-    /**
-     * @wbp.parser.constructor
-     */
     public ButtonPanel(Color backgroundColor, Icon icon, String title, String description) {
         init(backgroundColor);
         setLayout(new MigLayout("center", "[grow,fill]", "[center][center][center]"));

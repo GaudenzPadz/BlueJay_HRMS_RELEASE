@@ -61,6 +61,8 @@ class EmployeeEditWindow extends JDialog {
 	private JComboBox<String> employmentTypeComboBox;
 
 	private JTextField employeeIdField;
+	private JLabel ratePerDayLabel;
+	private JTextField ratePerDayField;
 
 	public EmployeeEditWindow(JFrame parent, Employee emp, EmployeeDatabase db) {
 		super(parent, true);
@@ -179,8 +181,7 @@ class EmployeeEditWindow extends JDialog {
 
 	private void setupLayout() {
 		// Add components to the panel in a structured way
-		panel = new JPanel(new MigLayout("wrap, fillx, insets 35 45 30 45", "[180px,grow][100px][fill][grow,fill]",
-				"[][][][][][][][][][][][][][][][][][][][][][][][]"));
+		panel = new JPanel(new MigLayout("wrap, fillx, insets 35 45 30 45", "[180px,grow][100px][fill][grow,fill]", "[][][][][][][][][][][][][][][][][][][][][][][][][]"));
 		getContentPane().add(panel, "alignx left,growy");
 		// Gender panel
 		JPanel genderPanel = new JPanel(new MigLayout("insets 0"));
@@ -247,11 +248,18 @@ class EmployeeEditWindow extends JDialog {
 				dispose(); // Call method to cancel
 			}
 		});
-		panel.add(btnNewButton, "cell 0 21,growx");
+		
+		ratePerDayLabel = new JLabel("Rate per day");
+		panel.add(ratePerDayLabel, "cell 2 15,alignx trailing");
+		
+		ratePerDayField = new JTextField();
+		panel.add(ratePerDayField, "cell 3 15,growx");
+		ratePerDayField.setColumns(10);
+		panel.add(btnNewButton, "cell 0 22,growx");
 
 		// Buttons
 		saveBtn = new JButton("Save");
-		panel.add(saveBtn, "cell 3 21");
+		panel.add(saveBtn, "cell 3 22");
 	}
 
 	private void populateEmploymentTypeComboBox() {

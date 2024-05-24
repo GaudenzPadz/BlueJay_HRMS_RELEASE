@@ -1,187 +1,236 @@
 package bluejay.admin;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.EventQueue;
 import java.awt.Font;
-import java.awt.Image;
-import java.awt.event.ActionListener;
-import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.awt.LayoutManager;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
-import javax.swing.Timer;
 
 import com.formdev.flatlaf.FlatClientProperties;
 
-import bluejay.Main;
 import bluejayDB.EmployeeDatabase;
 import net.miginfocom.swing.MigLayout;
+import raven.chart.data.pie.DefaultPieDataset;
+import raven.chart.pie.PieChart;
 
 public class HomePanel extends JPanel {
 
-    private static final long serialVersionUID = 1L;
-    private EmployeeDatabase db;
-    private ImageIcon listIcon = new ImageIcon(getClass().getResource("/images/list.png"));
-    private ImageIcon recruitmentIcon = new ImageIcon(getClass().getResource("/images/recruitment.png"));
-    private ImageIcon payrollIcon = new ImageIcon(getClass().getResource("/images/payroll.png")); // New icon for
-                                                                                                  // Payroll Overview
-    private JLabel currentTimeLabel; // Label to display current time
-    private Timer timer; // Timer for updating time label
+	private static final long serialVersionUID = 1L;
+	private EmployeeDatabase db;
+	private ImageIcon listIcon = new ImageIcon(getClass().getResource("/images/list.png"));
+	private ImageIcon recruitmentIcon = new ImageIcon(getClass().getResource("/images/recruitment.png"));
+	private ImageIcon payrollIcon = new ImageIcon(getClass().getResource("/images/payroll.png")); // New icon for
+																									// Payroll
+																									// Overview
+	private JLabel currentTimeLabel; // Label to display current time
+	private JPanel pie;
+	private PieChart employeesPie;
+	private PieChart pieChart2;
+	private JLabel currentDataLabel;
+	private JLabel newHiresTodayNumLabel;
+	private JLabel absentsNumLabel;
+	private JLabel presentsNumLabel;
+	private JLabel totalEMPNumLabel;
 
-    public HomePanel(EmployeeDatabase DB) {
-        this.db = DB;
-        JPanel dash = dashboard();
-        add(dash);
-        // Add the time panel
-        JPanel timePanel = createTimePanel();
-        add(timePanel);
+	private void initializeComponents() {
+		currentTimeLabel = new JLabel("time label");
+		currentDataLabel = new JLabel("current date");
+		newHiresTodayNumLabel = new JLabel("0");
+		absentsNumLabel = new JLabel("0");
+		presentsNumLabel = new JLabel("0");
+		totalEMPNumLabel = new JLabel("0");
 
-        // Create and start the timer to update the time label every second
-        timer = new Timer(1000, e -> updateTime());
-        timer.start();
-    }
+	}
 
-    private JPanel dashboard() {
-        // Create a main panel with MigLayout for flexibility
-        JPanel panel = new JPanel(new MigLayout("", "[][]", "[][][]"));
+	public HomePanel(EmployeeDatabase DB) {
+		this.db = DB;
+		setLayout(new MigLayout("", "[grow]", "[grow]"));
+		initializeComponents();
 
-        // Create action listeners for the dashboard buttons
-        ActionListener viewEmployeeListListener = e -> {
-        };
+		JPanel panel = new JPanel();
+		add(panel, "cell 0 0,grow");
+		panel.setLayout(new BorderLayout(0, 0));
 
-        ActionListener attendanceListener = e -> {
-        };
+		JPanel body = new JPanel(new MigLayout("", "[:200px:260px,grow][::457.00px,grow 200,fill][grow]", "[][57px][4px][57px][4px][57px][4px][57px][4px][249px][10px]"));
+		panel.add(body, BorderLayout.CENTER);
 
-        try {
-            // Fetch data from the database for the dashboard overview
-            int totalEmployees = db.getAllEmployees().size();
-            int totalDepartments = db.getDepartments().getFetchSize();
-            int totalCheckInsToday = db.countCheckInsToday(); // Method to count check-ins for today
-            int newHiresToday = db.countNewEmployeesToday(); // Method to count new hires today
+		JPanel presentPanel = new JPanel();
+		presentPanel.putClientProperty(FlatClientProperties.STYLE,
+				"arc:20;[light]background:darken(@background,3%);[dark]background:lighten(@background,3%);background:#BBE1FA");
 
-            // Calculate upcoming pay day (replace this with your actual logic to calculate
-            // upcoming pay day)
-            String upcomingPayDay = calculateUpcomingPayDay(); // Assuming a method calculateUpcomingPayDay() is
-                                                               // implemented
+		JPanel titlePanel = new JPanel(new MigLayout("", "[46px][grow][grow 10]", "[14px]"));
+		body.add(titlePanel, "cell 0 0 2 1,grow");
 
-            // Create dashboard panels with dynamic data
-            JPanel empOverview = dashboardPanel(listIcon, "Employee Overview", "Total Employees:",
-                    String.valueOf(totalEmployees), "Departments:", String.valueOf(totalDepartments), "View More",
-                    viewEmployeeListListener);
+		JLabel lblNewLabel = new JLabel("Welcome, Admin!");
+		lblNewLabel.setFont(new Font("Tahoma", Font.BOLD, 15));
+		titlePanel.add(lblNewLabel, "cell 0 0,alignx left,aligny top");
 
-            JPanel attendanceOverview = dashboardPanel(recruitmentIcon, "Attendance Overview", "Total Check-Ins Today:",
-                    String.valueOf(totalCheckInsToday), // Total check-ins
-                    "New Hires Today:", String.valueOf(newHiresToday), // New hires today
-                    "View Attendance", attendanceListener);
+		titlePanel.add(currentDataLabel, "cell 1 0,alignx right");
 
-            // Create Payroll Overview panel
-            JPanel payrollOverview = dashboardPanel(payrollIcon, "Payroll Overview", "Upcoming PayDay:", upcomingPayDay, // Replace
-                                                                                                                         // "DD/MM/YYYY"
-                                                                                                                         // with
-                                                                                                                         // actual
-                                                                                                                         // date
-                    null, null, null, null); // Set null for the body and total labels, and action listener
+		titlePanel.add(currentTimeLabel, "cell 2 0,alignx right,growy");
 
-            panel.add(empOverview, "");
-            panel.add(attendanceOverview, "");
-            panel.add(payrollOverview, ""); // Add the Payroll Overview panel
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(null, "Error fetching dashboard data: " + ex.getMessage(), "Database Error",
-                    JOptionPane.ERROR_MESSAGE);
-        }
-        return panel;
-    }
+		body.add(presentPanel, "cell 0 1,grow");
+		presentPanel.setLayout(new MigLayout("", "[grow]", "[grow][14px,grow]"));
 
-    private String calculateUpcomingPayDay() {
-        // This method should calculate the upcoming pay day based on your business
-        // logic
-        // For demonstration purposes, let's assume a fixed value here
-        return "DD/MM/YYYY"; // Replace "DD/MM/YYYY" with the actual upcoming pay day
-    }
+		JLabel lblNewLabel_5 = new JLabel("Present");
+		presentPanel.add(lblNewLabel_5, "cell 0 0");
 
-    private JPanel dashboardPanel(ImageIcon icon, String title, String body1, String total1, String body2,
-            String total2, String viewBtnText, ActionListener actionListener) {
-        JPanel panel = new JPanel(new MigLayout("wrap,fillx,insets 25 35 25 35", "[][][][118.00px,center][]",
-                "[][20.00][][][pref!][][][]"));
-        panel.putClientProperty(FlatClientProperties.STYLE,
-                "arc:20;" + "[light]background:darken(@background,3%);" + "[dark]background:lighten(@background,3%)");
-        JButton iconBtn = new JButton(
-                new ImageIcon(icon.getImage().getScaledInstance(40, 40, Image.SCALE_SMOOTH)));
-        iconBtn.setHorizontalAlignment(SwingConstants.LEADING);
-        iconBtn.setOpaque(false);
-        iconBtn.setContentAreaFilled(false);
-        iconBtn.setBorderPainted(false);
+		presentsNumLabel.setFont(new Font("Tahoma", Font.BOLD, 20));
+		presentPanel.add(presentsNumLabel, "cell 0 1");
+		pie = new JPanel();
+		pie.setLayout(new MigLayout("", "[400px,grow]", "[300px,grow][300px,grow]"));
+		employeesPie = new PieChart();
+		pie.add(employeesPie, "cell 0 0,growx,aligny top");
 
-        panel.add(iconBtn, "cell 0 0 4 1,alignx left,aligny center");
+		body.add(pie, "cell 1 1 1 9,grow");
+		pieChart2 = new PieChart();
+		JLabel header2 = new JLabel("PIE CHART");
+		header2.putClientProperty(FlatClientProperties.STYLE, "font:+1");
+		pieChart2.setHeader(header2);
+		pieChart2.getChartColor().addColor(Color.decode("#f87171"), Color.decode("#fb923c"), Color.decode("#fbbf24"),
+				Color.decode("#a3e635"));
+		pieChart2.putClientProperty(FlatClientProperties.STYLE, "border:5,5,5,5,$Component.borderColor,,20");
+		DefaultPieDataset<String> dataset = new DefaultPieDataset<>();
+		dataset.addValue("Inantok", 40);
+		dataset.addValue("Sleepy", 60);
+		pieChart2.setDataset(dataset);
+		// pie.add(pieChart2, "cell 0 1,growx,aligny top");
 
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 15));
+		JPanel absentPanel = new JPanel();
+		absentPanel.putClientProperty(FlatClientProperties.STYLE,
+				"arc:20;[light]background:darken(@background,3%);[dark]background:lighten(@background,3%);background:#70E4EF");
+		body.add(absentPanel, "cell 0 3,grow");
+		absentPanel.setLayout(new MigLayout("", "[grow]", "[14px,grow][grow][grow]"));
 
-        panel.add(titleLabel, "cell 3 1,alignx left");
+		JLabel lblNewLabel_4_1 = new JLabel("Absent");
+		absentPanel.add(lblNewLabel_4_1, "cell 0 0");
 
-        JLabel bodyLabel_1 = new JLabel(body1);
-        panel.add(bodyLabel_1, "cell 3 3,alignx left");
+		absentsNumLabel.setFont(new Font("Tahoma", Font.BOLD, 20));
+		absentPanel.add(absentsNumLabel, "cell 0 1");
 
-        JLabel totalLabel_1 = new JLabel(total1);
-        panel.add(totalLabel_1, "cell 4 3,alignx left");
+		JPanel newHiresPanel = new JPanel();
+		newHiresPanel.putClientProperty(FlatClientProperties.STYLE,
+				"arc:20;[light]background:darken(@background,3%);[dark]background:lighten(@background,3%);background:#EB9FEF");
+		body.add(newHiresPanel, "cell 0 5,grow");
+		newHiresPanel.setLayout(new MigLayout("", "[grow]", "[][]"));
 
-        if (actionListener != null) { // Add the button only if action listener is provided
-            JButton viewPanelBtn = new JButton(viewBtnText);
-            viewPanelBtn.addActionListener(actionListener);
-            JLabel bodyLabel_2 = new JLabel(body2);
-            panel.add(bodyLabel_2, "cell 3 5,alignx left");
+		JLabel lblNewLabel_3 = new JLabel("New Hires Today");
+		newHiresPanel.add(lblNewLabel_3, "cell 0 0");
 
-            JLabel totalLabel_2 = new JLabel(total2);
-            panel.add(totalLabel_2, "cell 4 5");
-            panel.add(viewPanelBtn, "cell 3 7,grow");
-        } else { // Add only labels if no action listener is provided
-            if (body2 != null && total2 != null) {
-                JLabel bodyLabel_2 = new JLabel(body2);
-                panel.add(bodyLabel_2, "cell 3 5,alignx left");
+		newHiresTodayNumLabel.setFont(new Font("Tahoma", Font.BOLD, 20));
+		newHiresPanel.add(newHiresTodayNumLabel, "cell 0 1");
 
-                JLabel totalLabel_2 = new JLabel(total2);
-                panel.add(totalLabel_2, "cell 4 5");
-            }
-        }
+		JPanel totalEMPPanel = new JPanel((LayoutManager) null);
+		body.add(totalEMPPanel, "cell 0 7,grow");
+		totalEMPPanel.setLayout(new MigLayout("", "[grow]", "[][][]"));
 
-        return panel;
-    }
+		JLabel lblNewLabel_3_1 = new JLabel("Total Employees");
+		totalEMPPanel.add(lblNewLabel_3_1, "cell 0 0,growx");
 
-    private JPanel createTimePanel() {
-        JPanel timePanel = new JPanel(new MigLayout("wrap,fillx,insets 25 35 25 35", "[][][][][][][][]", "[]"));
-        timePanel.putClientProperty(FlatClientProperties.STYLE,
-                "arc:20;" + "[light]background:darken(@background,3%);" + "[dark]background:lighten(@background,3%)");
+		totalEMPNumLabel.setFont(new Font("Tahoma", Font.BOLD, 20));
+		totalEMPPanel.add(totalEMPNumLabel, "cell 0 1,growx");
 
-        // Adding current time
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm:ss a"); // Updated pattern for 12-hour format
-                                                                                 // with AM/PM
-        LocalDateTime now = LocalDateTime.now();
-        String currentTime = formatter.format(now);
+		JPanel notificationPanel = new JPanel();
+		body.add(notificationPanel, "cell 0 9,grow");
 
-        JLabel timeLabel = new JLabel("Current Time:");
-        timePanel.add(timeLabel, "cell 0 0,alignx left");
+		JPanel panel_5 = new JPanel();
+		body.add(panel_5, "cell 0 10,grow");
+		refreshData();
 
-        currentTimeLabel = new JLabel(currentTime); // Assign to instance variable
-        timePanel.add(currentTimeLabel, "cell 1 0,alignx left");
+		updateCurrentTime();
+		updateCurrentDate();
+		updatePresentEmployees();
+		updateAbsentEmployees();
+		updateNewHiresToday();
 
-        return timePanel;
-    }
+	}
 
-    // Method to update the time label
-    private void updateTime() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm:ss a"); // Updated pattern for 12-hour format
-                                                                                 // with AM/PM
-        LocalDateTime now = LocalDateTime.now();
-        String currentTime = formatter.format(now);
-        currentTimeLabel.setText(currentTime);
-    }
+	private void refreshData() {
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				// Remove all components
+				pie.removeAll();
+				pie.setLayout(new MigLayout("", "[400px,grow]", "[300px,grow][300px,grow]"));
 
-    // Method to stop the timer when HomePanel is disposed
-    public void dispose() {
-        timer.stop();
-    }
+				// Reinitialize the pie chart
+				employeesPie = new PieChart();
+				pie.add(employeesPie, "cell 0 0,growx,aligny top");
+
+				JLabel header1 = new JLabel("Employee Overview");
+				header1.putClientProperty(FlatClientProperties.STYLE, "font:+1");
+				employeesPie.setHeader(header1);
+				employeesPie.getChartColor().addColor(Color.decode("#f87171"), Color.decode("#fb923c"),
+						Color.decode("#fbbf24"), Color.decode("#a3e635"));
+				employeesPie.putClientProperty(FlatClientProperties.STYLE, "border:5,5,5,5,$Component.borderColor,,20");
+				employeesPie.setDataset(employeesData());
+
+				// Repaint and revalidate the panel
+				pie.repaint();
+				pie.revalidate();
+				employeesPie.startAnimation();
+			}
+		});
+	}
+
+	private void updateCurrentTime() {
+		SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm:ss a");
+		currentTimeLabel.setText(timeFormat.format(new Date()));
+	}
+
+	private void updateCurrentDate() {
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		currentDataLabel.setText(dateFormat.format(new Date()));
+	}
+
+	private int totalEmployees = 0;
+
+	private DefaultPieDataset employeesData() {
+		DefaultPieDataset<String> dataset = new DefaultPieDataset<>();
+
+		// Populate dataset with employee work types and calculate total employees
+		int shieldedMetalArcWelding = db.getEmployeeCountByType("Shielded Metal Arc Welding");
+		dataset.addValue("Shielded Metal Arc Welding", shieldedMetalArcWelding);
+
+		int metalInertGasWelding = db.getEmployeeCountByType("Metal Inert Gas Welding");
+		dataset.addValue("Metal Inert Gas Welding", metalInertGasWelding);
+
+		int fluxCoredArcWelding = db.getEmployeeCountByType("Flux-cored Arc Welding");
+		dataset.addValue("Flux-cored Arc Welding", fluxCoredArcWelding);
+
+		int gasTungstenArcWelding = db.getEmployeeCountByType("Gas Tungsten Arc Welding");
+		dataset.addValue("Gas Tungsten Arc Welding", gasTungstenArcWelding);
+
+		totalEmployees += gasTungstenArcWelding + shieldedMetalArcWelding + metalInertGasWelding + fluxCoredArcWelding;
+
+		// Update the total employee count label
+		System.out.println("NUM OF TOTAL EMP : " + String.valueOf(totalEmployees));
+		totalEMPNumLabel.setText(String.valueOf(totalEmployees));
+
+		return dataset;
+	}
+
+	private void updatePresentEmployees() {
+		int presentCount = db.getPresentEmployeeCount();
+		System.out.println(presentCount);
+		presentsNumLabel.setText(String.valueOf(presentCount));
+	}
+
+	private void updateAbsentEmployees() {
+		int absentCount = db.getAbsentEmployeeCount();
+		System.out.println(absentCount);
+		absentsNumLabel.setText(String.valueOf(absentCount));
+	}
+
+	private void updateNewHiresToday() {
+		int newHiresCount = db.getNewHiresTodayCount();
+		System.out.println(newHiresCount);
+		newHiresTodayNumLabel.setText(String.valueOf(newHiresCount));
+	}
+
 }

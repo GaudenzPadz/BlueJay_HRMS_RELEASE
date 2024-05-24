@@ -9,7 +9,8 @@ import javax.swing.SwingUtilities;
 
 import bluejayDB.EmployeeDatabase;
 import bluejay.Components.GUI;
-
+import bluejay.Components.SplashScreen;
+import bluejay.Components.LoginPanel;
 // Main application logic with splash screen and progress update
 public class Main {
 
